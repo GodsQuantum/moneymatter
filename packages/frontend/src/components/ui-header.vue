@@ -82,7 +82,7 @@
       </div>
 
       <div class="ml-auto flex items-center gap-2">
-        <DesktopOnlyTooltip :content="$t('header.feedback')" :disabled="!isHeaderBarCompact">
+        <DesktopOnlyTooltip v-if="!isMobileView" :content="$t('header.feedback')" :disabled="!isHeaderBarCompact">
           <span class="inline-flex">
             <FeedbackDialog>
               <Button
@@ -101,7 +101,7 @@
         </DesktopOnlyTooltip>
 
         <DesktopOnlyTooltip
-          v-if="isSupportButtonVisible"
+          v-if="isSupportButtonVisible && !isMobileView"
           :content="$t('header.support')"
           :disabled="!isHeaderBarCompact"
         >
@@ -263,13 +263,7 @@ useResizeObserver(headerBarRef, ([entry]) => {
   isHeaderBarCompact.value = entry.contentRect.width < 890;
 });
 
-const DONATE_URL = 'https://donatr.ee/letehaha';
-
-const { isSupportButtonVisible } = useSupportButton();
-
-const openSupport = () => {
-  window.open(DONATE_URL, '_blank', 'noopener,noreferrer');
-};
+const { isSupportButtonVisible, openSupport } = useSupportButton();
 
 const syncStatus = useSyncStatus();
 

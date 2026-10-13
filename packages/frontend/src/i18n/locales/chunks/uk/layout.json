@@ -19,9 +19,10 @@
     "planned": {
       "planned": "Заплановане",
       "subscriptions": "Регулярні платежі",
-      "budgets": "Бюджети"
+      "budgets": "Трекери"
     },
-    "venture": "Венчур"
+    "venture": "Венчур",
+    "budget": "Бюджет"
   },
   "sidebar": {
     "collapse": "Згорнути бічну панель",
@@ -270,7 +271,7 @@
             "description": "Додавайте теги до групування пов'язаних транзакцій"
           },
           "create-budget": {
-            "title": "Встановіть бюджет",
+            "title": "Встановіть трекер",
             "description": "Створіть ліміти витрат для категорій"
           },
           "create-subscription": {

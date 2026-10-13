@@ -9,6 +9,9 @@ export type TransactionOptionalField = (typeof TRANSACTION_OPTIONAL_FIELDS)[numb
 // than the client letting the user type a name the server will 400 on.
 export const SAVED_PIVOT_VIEW_NAME_MAX_LENGTH = 120;
 
+// Scheduled bank-sync hours (UTC) for a user who has not set their own.
+export const DEFAULT_BANK_SYNC_HOURS_UTC = [6, 18];
+
 // A saved Pivot Report "view": the full configuration a user pinned so they can reopen the same
 // cross-tab later. Persisted in the user-settings JSONB (no dedicated table); the backend Zod
 // schema (`ZodSavedPivotViewConfigSchema`) is asserted to infer exactly this shape, so both

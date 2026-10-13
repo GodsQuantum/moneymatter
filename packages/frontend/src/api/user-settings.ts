@@ -110,6 +110,8 @@ export interface UserSettingsSchema {
   matchTransfersWithManualAccounts?: boolean;
   /** Store bank transactions before they are booked. Off when unset. */
   importPendingBankTransactions?: boolean;
+  /** UTC hours of the scheduled bank sync, at most two. 06:00 and 18:00 when unset. */
+  bankSyncHoursUtc?: number[];
   sidebarSections?: SidebarSectionsConfig;
   sidebarNav?: SidebarNavConfig;
   payeeExtractionUsesDescription?: boolean;

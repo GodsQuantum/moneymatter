@@ -180,6 +180,9 @@ export const auth = betterAuth({
     // jwt() must be loaded because @better-auth/oauth-provider references it
     // internally even when disableJwtPlugin is true (unguarded getJwtPlugin calls).
     jwt({
+      // Nothing reads the `set-auth-jwt` header; leaving it on costs a ba_jwks
+      // query and a JWT signature on every getSession call.
+      disableSettingJwtHeader: true,
       schema: {
         jwks: { modelName: 'ba_jwks' },
       },

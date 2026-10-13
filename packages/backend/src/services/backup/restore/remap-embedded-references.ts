@@ -347,3 +347,16 @@ export function remapFireSettingsIds({
     else delete fire.returnIndicatorId;
   }
 }
+
+/** Remap `settings.incomeCategoryIds` in place, dropping ids the restore did not insert. */
+export function remapIncomeCategoryIds({
+  settings,
+  insertedIds,
+}: {
+  settings: { incomeCategoryIds?: string[] };
+  insertedIds: InsertedIds;
+}): void {
+  if (!settings.incomeCategoryIds) return;
+  const categories = insertedIds.get(String(Categories.getTableName()));
+  settings.incomeCategoryIds = settings.incomeCategoryIds.flatMap((id) => categories?.get(id) ?? []);
+}

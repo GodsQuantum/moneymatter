@@ -108,6 +108,42 @@
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="min-w-48 flex-1">
             <div class="text-sm font-medium">
+              {{ $t('settings.general.incomeCategories.label') }}
+            </div>
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+              {{ $t('settings.general.incomeCategories.description') }}
+            </p>
+          </div>
+          <div class="w-64 shrink-0">
+            <CategoryMultiSelectField
+              :model-value="incomeCategoryIds"
+              :disabled="isPatching"
+              @update:model-value="handleIncomeCategoriesChange"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-4 pl-4" :class="{ 'opacity-60': !incomeCategoryIds.length }">
+          <div class="flex-1">
+            <div class="text-sm font-medium">
+              {{ $t('settings.general.filterCategoriesByType.label') }}
+            </div>
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+              {{ $t('settings.general.filterCategoriesByType.description') }}
+            </p>
+          </div>
+          <Switch
+            :model-value="filterCategoriesByType"
+            :disabled="isPatching || !userSettings || !incomeCategoryIds.length"
+            @update:model-value="handleFilterCategoriesByTypeToggle"
+          />
+        </div>
+
+        <Separator />
+
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="min-w-48 flex-1">
+            <div class="text-sm font-medium">
               {{ $t('settings.general.accountDropdowns.defaultAccount.label') }}
             </div>
             <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
@@ -315,6 +351,10 @@ const matchTransfersWithManualAccounts = computed(() => userSettings.value?.matc
 const importPendingBankTransactions = computed(() => userSettings.value?.importPendingBankTransactions ?? false);
 const savingsCategoryIds = computed(() => userSettings.value?.savingsCategoryIds ?? []);
 const taxCategoryIds = computed(() => userSettings.value?.taxCategoryIds ?? []);
+const incomeCategoryIds = computed(() => userSettings.value?.incomeCategoryIds ?? []);
+const filterCategoriesByType = computed(
+  () => userSettings.value?.ui?.transactionForm?.filterCategoriesByType !== false,
+);
 const showUpcomingTransactions = computed(() => !userSettings.value?.ui?.transactionsList?.hideUpcoming);
 
 const defaultAccount = computed<AccountModel | null>(() =>
@@ -384,6 +424,16 @@ const handleTaxCategoriesChange = async (value: string[]) => {
   }
 };
 
+const handleIncomeCategoriesChange = async (value: string[]) => {
+  try {
+    await patchAsync({ incomeCategoryIds: value });
+
+    addSuccessNotification(t('settings.general.incomeCategories.successNotification'));
+  } catch {
+    addErrorNotification(t('settings.general.incomeCategories.errorNotification'));
+  }
+};
+
 const handleSavingsCategoriesChange = async (value: string[]) => {
   try {
     await mutateAsync({
@@ -429,6 +479,15 @@ const handleShowUpcomingToggle = async (value: boolean) => {
     addSuccessNotification(t('settings.general.showUpcomingTransactions.successNotification'));
   } catch {
     addErrorNotification(t('settings.general.showUpcomingTransactions.errorNotification'));
+  }
+};
+
+const handleFilterCategoriesByTypeToggle = async (value: boolean) => {
+  try {
+    await patchAsync({ ui: { transactionForm: { filterCategoriesByType: value } } });
+    addSuccessNotification(t('settings.general.filterCategoriesByType.successNotification'));
+  } catch {
+    addErrorNotification(t('settings.general.filterCategoriesByType.errorNotification'));
   }
 };
 

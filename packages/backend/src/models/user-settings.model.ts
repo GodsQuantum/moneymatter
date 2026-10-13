@@ -196,6 +196,8 @@ const ZodTransactionFormSettingsSchema = z.object({
   optionalFields: z.array(z.enum(TRANSACTION_OPTIONAL_FIELDS)).optional(),
   /** Whether the transaction form may load map tiles and address search from OpenStreetMap. */
   mapPicker: z.boolean().optional(),
+  /** Whether the category picker lists only categories matching the transaction type. On when unset. */
+  filterCategoriesByType: z.boolean().optional(),
   /** Payment type preselected on new transactions. Credit card when unset. */
   defaultPaymentType: z.enum(PAYMENT_TYPES).optional(),
 });
@@ -335,6 +337,9 @@ export const ZodSettingsSchema = z.object({
   savingsCategoryIds: z.array(z.uuid()).optional(),
   // Categories whose spend is a tax. Stored only: the frontend analytics decide how to present it.
   taxCategoryIds: z.array(z.uuid()).optional(),
+  // Categories offered for income transactions; every other category is offered for expenses.
+  // Stored only: the frontend category picker applies it.
+  incomeCategoryIds: z.array(z.uuid()).optional(),
   currencyDisplay: z.enum(CURRENCY_DISPLAY_PREFERENCES).optional(),
   fire: ZodFireSettingsSchema.optional(),
 });
@@ -403,6 +408,7 @@ export const ZodSettingsPatchSchema = z.object({
         .object({
           optionalFields: z.array(z.enum(TRANSACTION_OPTIONAL_FIELDS)).optional(),
           mapPicker: z.boolean().optional(),
+          filterCategoriesByType: z.boolean().optional(),
           defaultPaymentType: z.enum(PAYMENT_TYPES).optional(),
         })
         .optional(),
@@ -437,6 +443,7 @@ export const ZodSettingsPatchSchema = z.object({
   importPendingBankTransactions: z.boolean().optional(),
   savingsCategoryIds: z.array(z.uuid()).optional(),
   taxCategoryIds: z.array(z.uuid()).optional(),
+  incomeCategoryIds: z.array(z.uuid()).optional(),
   currencyDisplay: z.enum(CURRENCY_DISPLAY_PREFERENCES).optional(),
   fire: ZodFireSettingsSchema.optional(),
 });

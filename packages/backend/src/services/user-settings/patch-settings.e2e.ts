@@ -1,12 +1,35 @@
 import { PAYMENT_TYPES } from '@bt/shared/types';
 import { generateRandomRecordId } from '@common/lib/record-id-helpers';
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it } from '@jest/globals';
 import { ERROR_CODES } from '@js/errors';
 import UserSettings, { SettingsSchema } from '@models/user-settings.model';
 import * as helpers from '@tests/helpers';
 
+// Signup seeds a settings row; the lazy-creation paths need a user without one.
+const dropSeededSettingsRow = async () => {
+  const { id: userId } = await helpers.getUserInfo({ raw: true });
+  await UserSettings.destroy({ where: { userId } });
+};
+
 describe('Patch user settings', () => {
+  it('seeds the default income category into incomeCategoryIds and lets it be cleared', async () => {
+    const categories = await helpers.getCategoriesList();
+    const income = categories.find((category) => category.key === 'income');
+
+    const seeded = await helpers.getUserSettings({ raw: true });
+    expect(seeded.incomeCategoryIds).toStrictEqual([income!.id]);
+
+    const patched = await helpers.patchUserSettings({ raw: true, patch: { incomeCategoryIds: [] } });
+    expect(patched.incomeCategoryIds).toStrictEqual([]);
+  });
+
+  it('rejects incomeCategoryIds that are not uuids', async () => {
+    const res = await helpers.patchUserSettings({ patch: { incomeCategoryIds: ['nope'] } });
+    expect(res.statusCode).toBe(ERROR_CODES.ValidationError);
+  });
+
   it('creates settings from defaults when the user has none stored yet', async () => {
+    await dropSeededSettingsRow();
     const patched = await helpers.patchUserSettings({
       raw: true,
       patch: { ui: { transactionsTable: { mobileView: 'list' } } },
@@ -135,6 +158,19 @@ describe('Patch user settings', () => {
     });
     expect(rejected.statusCode).toBe(ERROR_CODES.ValidationError);
     expect((await helpers.getUserSettings({ raw: true })).ui?.transactionForm?.mapPicker).toBe(true);
+  });
+
+  it('persists ui.transactionForm.filterCategoriesByType and rejects a non-boolean', async () => {
+    const patched = await helpers.patchUserSettings({
+      raw: true,
+      patch: { ui: { transactionForm: { filterCategoriesByType: false } } },
+    });
+    expect(patched.ui?.transactionForm?.filterCategoriesByType).toBe(false);
+
+    const rejected = await helpers.patchUserSettings({
+      patch: { ui: { transactionForm: { filterCategoriesByType: 'no' } } },
+    });
+    expect(rejected.statusCode).toBe(ERROR_CODES.ValidationError);
   });
 
   it('persists sidebarNav per key, leaves unset keys absent, rejects a non-boolean', async () => {
@@ -356,6 +392,8 @@ describe('Patch user settings', () => {
    * The race tests below assert only that a losing racer stays below a 500.
    */
   describe('UserSettings — one row per user', () => {
+    beforeEach(dropSeededSettingsRow);
+
     it('keeps exactly one row per user when different create-or-fetch endpoints run sequentially', async () => {
       // Every endpoint below get-or-creates the settings row; a dropped unique
       // `userId` index would leave more than one.

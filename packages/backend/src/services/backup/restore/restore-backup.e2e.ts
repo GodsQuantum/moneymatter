@@ -607,12 +607,14 @@ describe('Data backup restore (POST /user/backup/restore)', () => {
           const status = await helpers.waitForRestore({ jobId: restore.jobId! });
           expect(status.status).toBe('completed');
 
-          const targetCategory = (await helpers.getCategoriesList()).find((c) => c.name === 'Rent');
+          const targetCategories = await helpers.getCategoriesList();
+          const targetCategory = targetCategories.find((c) => c.name === 'Rent');
           const targetPortfolio = (await helpers.listPortfolios({ raw: true })).data.find((p) => p.name === 'FIRE PF');
           expect(targetCategory!.id).not.toBe(category.id);
           expect(targetPortfolio!.id).not.toBe(portfolio.id);
 
-          const { fire } = await helpers.getUserSettings({ raw: true });
+          const { fire, incomeCategoryIds } = await helpers.getUserSettings({ raw: true });
+          expect(incomeCategoryIds).toEqual([targetCategories.find((c) => c.key === 'income')!.id]);
           expect(fire?.spendingExcludedCategoryIds).toEqual([targetCategory!.id]);
           expect(fire?.returnIndicatorId).toBe(`portfolio:${targetPortfolio!.id}`);
         },

@@ -37,6 +37,18 @@
         "successNotification": "Tax categories updated",
         "errorNotification": "Failed to update tax categories"
       },
+      "filterCategoriesByType": {
+        "label": "Match categories to transaction type",
+        "description": "The transaction form lists only income categories for income and all other categories for expenses. Search still finds every category.",
+        "successNotification": "Category list setting updated",
+        "errorNotification": "Failed to update the category list setting"
+      },
+      "incomeCategories": {
+        "label": "Income categories",
+        "description": "Categories that count as income. Subcategories are included.",
+        "successNotification": "Income categories updated",
+        "errorNotification": "Failed to update income categories"
+      },
       "accountDropdowns": {
         "defaultAccount": {
           "label": "Default account",

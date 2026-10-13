@@ -33,6 +33,7 @@ import { useFormValidation } from '@/composable/form-validator';
 import { useCurrencyName, useFormatCurrency } from '@/composable/formatters';
 import { CUSTOM_BREAKPOINTS, useWindowBreakpoints } from '@/composable/window-breakpoints';
 import { formatUIAmount } from '@/js/helpers';
+import { flattenCategories } from '@/pages/import-export/utils/flatten-categories';
 import { ROUTES_NAMES } from '@/routes/constants';
 import { useAccountsStore, useCategoriesStore, useCurrenciesStore, useTagsStore, useUserStore } from '@/stores';
 import {
@@ -114,8 +115,15 @@ import { canDuplicateTransaction } from './utils/can-duplicate-transaction';
 import { resolveFormLocation } from './utils/resolve-form-location';
 import { useTransactionTemplating } from './composables/use-transaction-templating';
 import { useAutoTagApply } from '@/composable/use-auto-tag-apply';
+import { useUserSettings } from '@/composable/data-queries/user-settings';
 
-import { canDeleteTransaction, isConnectedAccount, isTxEditableAsManual, prepopulateForm } from './helpers';
+import {
+  canDeleteTransaction,
+  getUnlistedCategoryIds,
+  isConnectedAccount,
+  isTxEditableAsManual,
+  prepopulateForm,
+} from './helpers';
 import { FORM_TYPES, type TransactionPrefill, UI_FORM_STRUCT } from './types';
 import { canSuggestOriginalAmount, resolveSuggestedOriginalAmount } from './utils/suggest-original-amount';
 
@@ -485,6 +493,18 @@ const isFormFieldsDisabled = computed(() => isLoading.value || !isInitialRefunds
 
 const currentTxType = computed(() => form.value.type);
 const isTransferTx = computed(() => currentTxType.value === FORM_TYPES.transfer);
+
+const { data: userSettings } = useUserSettings();
+// A shared account lists its owner's categories, which the caller's own settings don't describe.
+const unlistedCategoryIds = computed(() =>
+  isAccountSharedWithCaller.value || userSettings.value?.ui?.transactionForm?.filterCategoriesByType === false
+    ? undefined
+    : getUnlistedCategoryIds({
+        categories: formattedCategories.value,
+        incomeCategoryIds: userSettings.value?.incomeCategoryIds,
+        isIncome: currentTxType.value === FORM_TYPES.income,
+      }),
+);
 
 // The Loan pill only narrows the picker to loan accounts; the backend stamps transfer_to_loan from the destination's accountCategory.
 const isLoanDestination = computed(() => isTransferTx.value && transferDestinationType.value === 'loan');
@@ -1285,6 +1305,21 @@ const templating = useTransactionTemplating({
   submit: () => submit(),
 });
 
+// A default category the current type doesn't list would sit selected yet missing from the picker.
+watch(
+  unlistedCategoryIds,
+  (unlistedIds) => {
+    if (!isFormCreation.value || form.value.categoryUserTouched || templating.applied.value) return;
+    const selected = form.value.category;
+    if (!unlistedIds || !selected || !unlistedIds.has(selected.id)) return;
+    form.value.category =
+      flattenCategories({ categories: formattedCategories.value }).find((category) => !unlistedIds.has(category.id)) ??
+      null;
+    applyCategoryTags({ category: form.value.category });
+  },
+  { immediate: true },
+);
+
 const isDuplicateVisible = computed(
   () =>
     !isFormCreation.value &&
@@ -1762,6 +1797,7 @@ onUnmounted(() => {
                   :label="$t('dialogs.manageTransaction.form.categoryLabel')"
                   :placeholder="$t('dialogs.manageTransaction.form.selectCategoryPlaceholder')"
                   :values="effectiveFormattedCategories"
+                  :unlisted-ids="unlistedCategoryIds"
                   :error-message="categoryErrorMessage"
                   :categories-map="isAccountSharedWithCaller ? effectiveCategoriesMap : undefined"
                   :shared-owner-username="isAccountSharedWithCaller ? accountShare?.owner.username : undefined"

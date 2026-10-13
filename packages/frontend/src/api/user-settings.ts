@@ -7,6 +7,7 @@ import type {
   TransactionOptionalField,
   SidebarSectionsConfig,
   SavedPivotView,
+  SavedTransactionView,
   CurrencyDisplayPreference,
 } from '@bt/shared/types';
 
@@ -57,6 +58,8 @@ interface TransactionFormSettings {
   optionalFields?: TransactionOptionalField[];
   /** Whether the transaction form may load map tiles and address search from OpenStreetMap. */
   mapPicker?: boolean;
+  /** Whether the category picker lists only categories matching the transaction type. On when unset. */
+  filterCategoriesByType?: boolean;
   /** Payment type preselected on new transactions. Credit card when unset. */
   defaultPaymentType?: PAYMENT_TYPES;
 }
@@ -108,6 +111,8 @@ export interface UserSettingsSchema {
   matchTransfersWithManualAccounts?: boolean;
   /** Store bank transactions before they are booked. Off when unset. */
   importPendingBankTransactions?: boolean;
+  /** UTC hours of the scheduled bank sync, at most two. 06:00 and 18:00 when unset. */
+  bankSyncHoursUtc?: number[];
   sidebarSections?: SidebarSectionsConfig;
   sidebarNav?: SidebarNavConfig;
   payeeExtractionUsesDescription?: boolean;
@@ -116,6 +121,7 @@ export interface UserSettingsSchema {
   ui?: UiSettings;
   subscriptions?: SubscriptionsSettings;
   savedPivotViews?: SavedPivotView[];
+  savedTransactionViews?: SavedTransactionView[];
   /** Header "Support" (donation) button visibility. Defaults to visible when unset. */
   showSupportButton?: boolean;
   /**
@@ -139,6 +145,11 @@ export interface UserSettingsSchema {
    * A category also covered by `savingsCategoryIds` counts as savings.
    */
   taxCategoryIds?: string[];
+  /**
+   * Categories listed in the picker for income transactions; the rest are listed for expenses.
+   * Subcategories inherit from their parent. Empty or unset lists every category for both.
+   */
+  incomeCategoryIds?: string[];
   currencyDisplay?: CurrencyDisplayPreference;
   fire?: FireSettings;
 }

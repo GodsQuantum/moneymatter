@@ -1,4 +1,4 @@
-import { PAYMENT_TYPES } from '@bt/shared/types';
+import { MAX_SAVED_TRANSACTION_VIEWS, PAYMENT_TYPES } from '@bt/shared/types';
 import { generateRandomRecordId } from '@common/lib/record-id-helpers';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { ERROR_CODES } from '@js/errors';
@@ -260,6 +260,25 @@ describe('Patch user settings', () => {
     expect(fetched.savedPivotViews).toStrictEqual(patched.savedPivotViews);
   });
 
+  it('persists, replaces and clears saved transaction views', async () => {
+    const view = {
+      id: generateRandomRecordId(),
+      name: 'Groceries',
+      filters: { accountIds: ['a1'], noteIncludes: 'lidl' },
+      sorting: { sortBy: 'time', order: 'DESC' },
+      datePreset: 'last3Months',
+    };
+
+    const patched = await helpers.patchUserSettings({ raw: true, patch: { savedTransactionViews: [view] } });
+    expect(patched.savedTransactionViews).toStrictEqual([view]);
+
+    const fetched = await helpers.getUserSettings({ raw: true });
+    expect(fetched.savedTransactionViews).toStrictEqual([view]);
+
+    const cleared = await helpers.patchUserSettings({ raw: true, patch: { savedTransactionViews: [] } });
+    expect(cleared.savedTransactionViews).toStrictEqual([]);
+  });
+
   it('rejects invalid patch payloads', async () => {
     const validPivotConfig = {
       rowDimension: 'category' as const,
@@ -272,6 +291,21 @@ describe('Patch user settings', () => {
     const invalidPatches: Record<string, unknown>[] = [
       { savedPivotViews: [{ id: generateRandomRecordId(), name: '', config: validPivotConfig }] },
       { savedPivotViews: [{ id: generateRandomRecordId(), name: 'a'.repeat(121), config: validPivotConfig }] },
+      { savedTransactionViews: [{ id: generateRandomRecordId(), name: '', filters: {} }] },
+      {
+        savedTransactionViews: [
+          { id: generateRandomRecordId(), name: 'Bad preset', filters: {}, datePreset: 'lastWeek' },
+        ],
+      },
+      {
+        savedTransactionViews: Array.from({ length: MAX_SAVED_TRANSACTION_VIEWS + 1 }, () => ({
+          id: 'v',
+          name: 'v',
+          filters: {},
+        })),
+      },
+      { savedTransactionViews: [{ id: 'v', name: 'v', filters: {}, sorting: { sortBy: 'time', order: 'UP' } }] },
+      { savedTransactionViews: [{ id: 'v', name: 'a'.repeat(121), filters: {} }] },
       { import: { recalculateAccountBalance: 'yes' } },
       { accounts: { defaultAccountId: 'not-a-uuid' } },
       { accounts: { showArchivedInDropdowns: 'yes' } },

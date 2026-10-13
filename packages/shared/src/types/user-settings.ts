@@ -1,4 +1,6 @@
+import type { SORT_DIRECTIONS } from './api';
 import type { PivotGranularity, PivotMeasure, PivotRowDimension } from './stats/reports';
+import type { TRANSACTION_SORT_FIELD } from './transactions/transactions';
 
 // Transaction form fields the user can opt into showing, persisted in the user-settings JSONB.
 export const TRANSACTION_OPTIONAL_FIELDS = ['externalUrl', 'externalReference', 'location', 'originalAmount'] as const;
@@ -34,6 +36,24 @@ export interface SavedPivotView {
   id: string;
   name: string;
   config: SavedPivotViewConfig;
+}
+
+export const SAVED_TRANSACTION_VIEW_NAME_MAX_LENGTH = 120;
+export const MAX_SAVED_TRANSACTION_VIEWS = 50;
+
+// Date ranges a saved Transactions view keeps rolling instead of pinning to fixed dates.
+export const TRANSACTION_DATE_PRESETS = ['thisMonth', 'last3Months', 'last6Months', 'last12Months'] as const;
+export type TransactionDatePreset = (typeof TRANSACTION_DATE_PRESETS)[number];
+
+export interface SavedTransactionView {
+  id: string;
+  name: string;
+  // The Transactions page's filter state as JSON. Backup restore remaps the id arrays it holds, so
+  // a new id-carrying filter must be added to `remapSavedTransactionViewIds`.
+  filters: Record<string, unknown>;
+  sorting?: { sortBy: TRANSACTION_SORT_FIELD; order: SORT_DIRECTIONS };
+  // When set, the range is recomputed on apply and the stored start/end are ignored.
+  datePreset?: TransactionDatePreset;
 }
 
 // Per-section visibility for the sidebar's Accounts panel (Bank Accounts is always shown and

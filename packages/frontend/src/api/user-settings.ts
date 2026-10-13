@@ -7,6 +7,7 @@ import type {
   TransactionOptionalField,
   SidebarSectionsConfig,
   SavedPivotView,
+  SavedTransactionView,
   CurrencyDisplayPreference,
 } from '@bt/shared/types';
 
@@ -120,6 +121,7 @@ export interface UserSettingsSchema {
   ui?: UiSettings;
   subscriptions?: SubscriptionsSettings;
   savedPivotViews?: SavedPivotView[];
+  savedTransactionViews?: SavedTransactionView[];
   /** Header "Support" (donation) button visibility. Defaults to visible when unset. */
   showSupportButton?: boolean;
   /**

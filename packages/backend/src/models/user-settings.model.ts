@@ -14,6 +14,7 @@ import {
   type FireSettings,
   MAX_AI_CONNECTIONS,
   MAX_CATEGORY_MAPPING_PRESETS,
+  MAX_SAVED_TRANSACTION_VIEWS,
   type MutuallyAssignable,
   NOTIFICATION_TYPES,
   PAYMENT_TYPES,
@@ -22,9 +23,14 @@ import {
   PIVOT_ROW_DIMENSIONS,
   RecordId,
   SAVED_PIVOT_VIEW_NAME_MAX_LENGTH,
+  SAVED_TRANSACTION_VIEW_NAME_MAX_LENGTH,
+  SORT_DIRECTIONS,
   type SavedPivotView,
+  type SavedTransactionView,
   type SidebarSectionsConfig,
+  TRANSACTION_DATE_PRESETS,
   TRANSACTION_OPTIONAL_FIELDS,
+  TRANSACTION_SORT_FIELD,
 } from '@bt/shared/types';
 import { dateRange, withDateOrder } from '@common/lib/zod/custom-types';
 import { IdColumn } from '@common/types/id-column';
@@ -274,6 +280,14 @@ const ZodSavedPivotViewSchema = z.object({
   config: ZodSavedPivotViewConfigSchema,
 });
 
+const ZodSavedTransactionViewSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(SAVED_TRANSACTION_VIEW_NAME_MAX_LENGTH),
+  filters: z.record(z.string(), z.unknown()),
+  sorting: z.object({ sortBy: z.nativeEnum(TRANSACTION_SORT_FIELD), order: z.nativeEnum(SORT_DIRECTIONS) }).optional(),
+  datePreset: z.enum(TRANSACTION_DATE_PRESETS).optional(),
+});
+
 const fireRange = ({ key }: { key: keyof typeof FIRE_LIMITS }) =>
   z.number().min(FIRE_LIMITS[key].min).max(FIRE_LIMITS[key].max);
 
@@ -311,6 +325,7 @@ export const ZodSettingsSchema = z.object({
   import: ZodImportSettingsSchema.optional(),
   accounts: ZodAccountsSettingsSchema.optional(),
   savedPivotViews: z.array(ZodSavedPivotViewSchema).optional(),
+  savedTransactionViews: z.array(ZodSavedTransactionViewSchema).max(MAX_SAVED_TRANSACTION_VIEWS).optional(),
   // When true, Payee extraction falls back to the transaction description/note when the
   // provider's merchant field is empty. Off by default because Monobank's `counterName` is
   // empty for most card purchases, so it has to be an opt-in.
@@ -438,6 +453,7 @@ export const ZodSettingsPatchSchema = z.object({
   accounts: ZodAccountsSettingsSchema.optional(),
   // Same element schema as `ZodSettingsSchema`, defaults and all, so the two can't drift.
   savedPivotViews: z.array(ZodSavedPivotViewSchema).optional(),
+  savedTransactionViews: z.array(ZodSavedTransactionViewSchema).max(MAX_SAVED_TRANSACTION_VIEWS).optional(),
   payeeExtractionUsesDescription: z.boolean().optional(),
   payeePromotionThreshold: z.number().int().min(1).max(3).optional(),
   showSupportButton: z.boolean().optional(),
@@ -485,6 +501,16 @@ export type FireSettingsSchemaIsInSync = Expect<Equals<z.infer<typeof ZodFireSet
  * @public exported only so the assertion isn't flagged as unused.
  */
 export type SavedPivotViewSchemaIsInSync = Expect<Equals<z.infer<typeof ZodSavedPivotViewSchema>, SavedPivotView>>;
+
+/**
+ * `MutuallyAssignable`, not `Equals`: Zod infers the sorting enums as member unions. `Required`
+ * makes a key missing on either side fail, which mutual assignability alone lets through.
+ *
+ * @public exported only so the assertion isn't flagged as unused.
+ */
+export type SavedTransactionViewSchemaIsInSync = Expect<
+  MutuallyAssignable<Required<z.infer<typeof ZodSavedTransactionViewSchema>>, Required<SavedTransactionView>>
+>;
 
 /**
  * Compile-time drift guard: the persisted category preset must infer exactly the shared

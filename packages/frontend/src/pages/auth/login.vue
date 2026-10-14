@@ -52,7 +52,17 @@
             type="password"
             :disabled="isFormLoading"
             :error-message="getFieldErrorMessage('form.password')"
-          />
+            :non-label-wrapper="isEmailEnabled"
+          >
+            <template v-if="isEmailEnabled" #label-right>
+              <router-link
+                :to="{ name: ROUTES_NAMES.forgotPassword }"
+                class="text-muted-foreground hover:text-primary-text focus-visible:text-primary-text text-sm transition-colors hover:underline"
+              >
+                {{ $t('auth.login.forgotPassword') }}
+              </router-link>
+            </template>
+          </input-field>
         </form-wrapper>
 
         <div class="flex justify-center">
@@ -78,7 +88,7 @@
 </template>
 
 <script lang="ts" setup>
-import { getSignupsOpen } from '@/api/auth';
+import { getAuthFeatures, getSignupsOpen } from '@/api/auth';
 import { getOAuthAuthorizeUrl } from '@/api/mcp';
 import { DEMO_SESSION_EXPIRED_REASON } from '@/common/const';
 import { VUE_QUERY_CACHE_KEYS } from '@/common/const/vue-query';
@@ -99,7 +109,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/lib/ui/c
 import { useNotificationCenter } from '@/components/notification-center';
 import { useFormValidation } from '@/composable';
 import { OAuthProviderNotConfiguredError } from '@/js/errors';
-import { email, minLength, required } from '@/js/helpers/validators';
+import { email, required } from '@/js/helpers/validators';
 import { ROUTES_NAMES } from '@/routes/constants';
 import { useAuthStore } from '@/stores';
 import { OAUTH_PROVIDER } from '@bt/shared/types';
@@ -140,6 +150,12 @@ const { data: signupsStatus } = useQuery({
 });
 const signupsOpen = computed(() => signupsStatus.value?.signupsOpen ?? true);
 
+const { data: authFeatures } = useQuery({
+  queryKey: VUE_QUERY_CACHE_KEYS.authFeatures,
+  queryFn: getAuthFeatures,
+});
+const isEmailEnabled = computed(() => authFeatures.value?.emailEnabled === true);
+
 // Check for OAuth error from callback redirect
 const oauthError = route.query.oauth_error as string | undefined;
 if (oauthError) {
@@ -159,16 +175,12 @@ const { isFormValid, getFieldErrorMessage } = useFormValidation(
   {
     form: {
       email: { required, email },
-      password: {
-        required,
-        passwordMinLength: minLength(6),
-      },
+      password: { required },
     },
   },
   undefined,
   {
     customValidationMessages: {
-      passwordMinLength: t('validation.minLength', { length: 6 }),
       email: t('validation.emailInvalid'),
     },
   },

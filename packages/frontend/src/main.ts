@@ -8,6 +8,7 @@ import { getDateFnsLocale } from '@/composable/use-date-locale';
 import { i18n, initializeLocale, loadChunks } from '@/i18n';
 import { initPostHog, trackPageviews } from '@/lib/posthog';
 import { queryClient } from '@/lib/query-client';
+import { stashResetPasswordToken } from '@/lib/reset-password-token';
 import { initSentry } from '@/lib/sentry';
 import { router } from '@/routes';
 import { store } from '@/stores/setup';
@@ -19,6 +20,7 @@ import { createApp, watchEffect } from 'vue';
 
 import App from './app.vue';
 
+stashResetPasswordToken();
 identifyCurrentTheme();
 patchMetaViewportMaxScaleForiOS();
 if (!import.meta.env.DEV) {

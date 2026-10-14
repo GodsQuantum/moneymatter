@@ -1,4 +1,5 @@
 import { i18nChunkGuard } from '@/i18n/route-guard';
+import { RESET_PASSWORD_PATH } from '@/lib/reset-password-token';
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -613,6 +614,19 @@ const routes: RouteRecordRaw[] = [
         name: ROUTES_NAMES.verifyEmail,
         component: () => import('@/pages/auth/verify-email.vue'),
         meta: { i18nChunks: ['auth/verify-email'] },
+      },
+      {
+        path: '/forgot-password',
+        name: ROUTES_NAMES.forgotPassword,
+        component: () => import('@/pages/auth/forgot-password.vue'),
+        meta: { i18nChunks: ['auth/password-reset'] },
+      },
+      {
+        // No authPageGuard: a signed-in user who forgot their password still needs to finish the reset.
+        path: RESET_PASSWORD_PATH,
+        name: ROUTES_NAMES.resetPassword,
+        component: () => import('@/pages/auth/reset-password.vue'),
+        meta: { i18nChunks: ['auth/password-reset'] },
       },
       {
         path: '/welcome',

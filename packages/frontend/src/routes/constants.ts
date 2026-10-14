@@ -93,6 +93,8 @@ export const ROUTES_NAMES = Object.freeze({
   signIn: `${ROUTER_LAYOUTS.auth}.sign-in`,
   signUp: `${ROUTER_LAYOUTS.auth}.sign-up`,
   verifyEmail: `${ROUTER_LAYOUTS.auth}.verify-email`,
+  forgotPassword: `${ROUTER_LAYOUTS.auth}.forgot-password`,
+  resetPassword: `${ROUTER_LAYOUTS.auth}.reset-password`,
   welcome: `${ROUTER_LAYOUTS.auth}.welcome`,
   authCallback: `${ROUTER_LAYOUTS.auth}.callback`,
   oauthAuthorize: `${ROUTER_LAYOUTS.auth}.oauth-authorize`,

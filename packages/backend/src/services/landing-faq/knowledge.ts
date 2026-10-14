@@ -25,9 +25,11 @@ developer, in the open. Source: https://github.com/letehaha/moneymatter
   with your own API key, MCP server for AI agents, 2 household seats. No bank sync.
 - Plus: $55/year or $8/month. Everything in Essential, plus bank sync, AI features on our key
   with no setup, 5 household seats.
-- Premium: planned, price not decided. Built-in bank sync with no provider account, real-time
-  security prices, higher AI usage cap, 10 household seats. Roadmap and voting:
-  https://moneymatter.featurebase.app/dashboard/roadmap
+- Premium: planned, not for sale yet. Planned price $80/year or $12/month. Bank sync we run for
+  you: no API keys and no provider subscription to pay (you still sign in to the bank through our
+  partner's page). 2 bank connections included with unlimited accounts each, extra banks
+  $2/month. Real-time security prices, higher AI usage cap, 10 household seats. Leave an email
+  with "Get early access" on the pricing section to hear when it opens.
 - Seats are fixed per plan and cannot be bought one by one. At the limit, new invitations are
   blocked until you upgrade.
 - Switching monthly to yearly or Essential to Plus: Settings > Plan & billing opens the Stripe

@@ -31,7 +31,8 @@
       "oauthButton": {
         "signIn": "Увійти через {provider}",
         "signUp": "Зареєструватися через {provider}"
-      }
+      },
+      "lastUsed": "Востаннє"
     }
   }
 }

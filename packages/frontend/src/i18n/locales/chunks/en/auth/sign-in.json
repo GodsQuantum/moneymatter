@@ -31,7 +31,8 @@
       "oauthButton": {
         "signIn": "Sign in with {provider}",
         "signUp": "Sign up with {provider}"
-      }
+      },
+      "lastUsed": "Last used"
     }
   }
 }

@@ -12,7 +12,6 @@ import { Button } from '@/components/lib/ui/button';
 import { Callout } from '@/components/lib/ui/callout';
 import { Label } from '@/components/lib/ui/label';
 import { useNotificationCenter } from '@/components/notification-center';
-import { PillTabs } from '@/components/lib/ui/pill-tabs';
 import { ArrowRightIcon, InfoIcon } from '@lucide/vue';
 import { Switch } from '@/components/lib/ui/switch';
 import { useInvalidatingMutation } from '@/composable/data-queries/use-invalidating-mutation';
@@ -210,14 +209,14 @@ const submit = () => {
     />
 
     <form v-else class="grid gap-4" @submit.prevent="submit">
-      <div class="grid gap-2">
-        <Label>{{ $t('budgetPlans.create.cadenceLabel') }}</Label>
-        <PillTabs
-          :model-value="preset"
-          :items="presetItems"
-          @update:model-value="(value) => (preset = value as BudgetCadencePreset)"
-        />
-      </div>
+      <SelectField
+        :model-value="presetItems.find((option) => option.value === preset) ?? null"
+        :values="presetItems"
+        label-key="label"
+        value-key="value"
+        :label="$t('budgetPlans.create.cadenceLabel')"
+        @update:model-value="(option) => option && (preset = option.value)"
+      />
 
       <div v-if="preset === 'custom'" class="grid grid-cols-2 gap-3">
         <InputField

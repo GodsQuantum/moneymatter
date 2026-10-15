@@ -119,9 +119,9 @@
       "suggestedLinesHint": "Перетворює ваші витрати за останні 3 місяці на іменовані групи та статті, де сума кожної — середнє значення. Якщо історії немає, додає базовий набір. Триває кілька секунд. Будь-яку з них можна змінити або видалити пізніше.",
       "askQuestionsLabel": "Спершу відповісти на кілька запитань",
       "askQuestionsHint": "Кілька коротких кроків для точнішого результату.",
-      "customEveryLabel": "Кожні",
+      "customEveryLabel": "Оновлювати кожні",
       "customEveryPlaceholder": "Напр., 10",
-      "customUnitLabel": "Одиниця",
+      "customUnitLabel": "Період",
       "customUnitPlaceholder": "Виберіть одиницю",
       "customUnits": {
         "days": "Дні",
@@ -202,7 +202,7 @@
       "weekly": "Щотижня",
       "everyNDays": "Кожні {n} дн.",
       "everyNMonths": "Кожні {n} міс.",
-      "custom": "Власний"
+      "custom": "Кастомно"
     },
     "carryPolicy": {
       "floor": "Переносити залишок",

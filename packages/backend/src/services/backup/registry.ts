@@ -1,5 +1,6 @@
 import type { BackupReferenceFileName } from '@bt/shared/types';
 import { connection } from '@models/index';
+import { isRestorablePlanRow } from '@services/budget-plans/validate-cadence';
 import { Model, type ModelStatic } from 'sequelize';
 
 type AnyModel = ModelStatic<Model>;
@@ -25,7 +26,9 @@ export type BackupParentScope =
   | 'subscriptions'
   | 'ventureEvents'
   | 'subscriptionPeriods'
-  | 'importBatches';
+  | 'importBatches'
+  | 'budgetPlans'
+  | 'budgetLines';
 
 /**
  * How a table's rows are selected for the current user.
@@ -69,6 +72,8 @@ export interface BackupTableDef<Name extends string = BackupFileName> {
   enrichMccCode?: boolean;
   /** Drop a row on restore whose `currencyCode` isn't seeded on the target instance. */
   requireSeededCurrency?: boolean;
+  /** Drop a row on restore that breaks an app-level rule the DB constraints don't cover. */
+  isValidRow?: (params: { row: Record<string, unknown> }) => boolean;
 }
 
 /**
@@ -296,6 +301,15 @@ const TABLE_DEFS = [
     scope: { strategy: 'userColumn', column: 'userId' },
     restoreMode: 'insert',
   },
+  {
+    fileName: 'budget-plans',
+    model: models.BudgetPlans,
+    tier: 3,
+    scope: { strategy: 'userColumn', column: 'userId' },
+    restoreMode: 'insert',
+    paranoid: true,
+    isValidRow: isRestorablePlanRow,
+  },
 
   // tier 4
   {
@@ -361,6 +375,27 @@ const TABLE_DEFS = [
     model: models.ImportBatchAccountEffects,
     tier: 4,
     scope: { strategy: 'viaParent', fk: 'importBatchId', parent: 'importBatches' },
+    restoreMode: 'insert',
+  },
+  {
+    fileName: 'budget-line-groups',
+    model: models.BudgetLineGroups,
+    tier: 4,
+    scope: { strategy: 'viaParent', fk: 'planId', parent: 'budgetPlans' },
+    restoreMode: 'insert',
+  },
+  {
+    fileName: 'budget-periods',
+    model: models.BudgetPeriods,
+    tier: 4,
+    scope: { strategy: 'viaParent', fk: 'planId', parent: 'budgetPlans' },
+    restoreMode: 'insert',
+  },
+  {
+    fileName: 'budget-plan-accounts',
+    model: models.BudgetPlanAccounts,
+    tier: 4,
+    scope: { strategy: 'viaParent', fk: 'planId', parent: 'budgetPlans' },
     restoreMode: 'insert',
   },
 
@@ -449,6 +484,13 @@ const TABLE_DEFS = [
     scope: { strategy: 'viaParent', fk: 'ventureEventId', parent: 'ventureEvents' },
     restoreMode: 'insert',
   },
+  {
+    fileName: 'budget-lines',
+    model: models.BudgetLines,
+    tier: 5,
+    scope: { strategy: 'viaParent', fk: 'planId', parent: 'budgetPlans' },
+    restoreMode: 'insert',
+  },
 
   // tier 6
   {
@@ -456,6 +498,27 @@ const TABLE_DEFS = [
     model: models.SubscriptionPeriodNotifications,
     tier: 6,
     scope: { strategy: 'viaParent', fk: 'periodId', parent: 'subscriptionPeriods' },
+    restoreMode: 'insert',
+  },
+  {
+    fileName: 'budget-line-categories',
+    model: models.BudgetLineCategories,
+    tier: 6,
+    scope: { strategy: 'viaParent', fk: 'lineId', parent: 'budgetLines' },
+    restoreMode: 'insert',
+  },
+  {
+    fileName: 'budget-line-goals',
+    model: models.BudgetLineGoals,
+    tier: 6,
+    scope: { strategy: 'viaParent', fk: 'lineId', parent: 'budgetLines' },
+    restoreMode: 'insert',
+  },
+  {
+    fileName: 'budget-assignments',
+    model: models.BudgetAssignments,
+    tier: 6,
+    scope: { strategy: 'viaParent', fk: 'lineId', parent: 'budgetLines' },
     restoreMode: 'insert',
   },
 
@@ -499,7 +562,7 @@ interface BackupExcludedDef {
 }
 
 /**
- * Global tables deliberately left out of the backup. Listed explicitly so the
+ * Tables deliberately left out of the backup. Listed explicitly so the
  * drift-guard unit test forces a backup decision for every registered model —
  * a new model added without one fails that test.
  */

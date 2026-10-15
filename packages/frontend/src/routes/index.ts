@@ -1,4 +1,5 @@
 import { i18nChunkGuard } from '@/i18n/route-guard';
+import { RESET_PASSWORD_PATH } from '@/lib/reset-password-token';
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -167,6 +168,19 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
+      // The "Budget" (budget plans). "Trackers" are the `budgets` routes under /planned.
+      {
+        path: '/budget',
+        name: ROUTES_NAMES.budget,
+        component: () => import('@/pages/budget/budget.vue'),
+        meta: { navSection: 'budget', i18nChunks: ['pages/budget-plans'] },
+      },
+      {
+        path: '/budget/:planId',
+        name: ROUTES_NAMES.budgetPlan,
+        component: () => import('@/pages/budget/budget-plan.vue'),
+        meta: { navSection: 'budget', i18nChunks: ['pages/budget-plans'] },
+      },
       {
         path: '/planned',
         name: ROUTES_NAMES.planned,
@@ -184,14 +198,15 @@ const routes: RouteRecordRaw[] = [
             name: ROUTES_NAMES.plannedSubscriptionDetails,
             component: () => import('@/pages/planned/subscriptions/subscription-details.vue'),
           },
+          // Shown as "Trackers"; route names, pages and the API keep "budgets".
           {
-            path: 'budgets',
+            path: 'trackers',
             name: ROUTES_NAMES.plannedBudgets,
             component: () => import('@/pages/budgets/budgets.vue'),
             meta: { i18nChunks: ['pages/budgets'] },
           },
           {
-            path: 'budgets/:id',
+            path: 'trackers/:id',
             name: ROUTES_NAMES.plannedBudgetDetails,
             component: () => import('@/pages/budgets/budgets-info/index.vue'),
             meta: {
@@ -209,6 +224,18 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/budgets/:id',
         name: ROUTES_NAMES.budgetsInfo,
+        redirect: (to) => ({
+          name: ROUTES_NAMES.plannedBudgetDetails,
+          params: { id: to.params.id },
+        }),
+      },
+      // /planned/budgets URLs are in bookmarks and sent notification links.
+      {
+        path: '/planned/budgets',
+        redirect: { name: ROUTES_NAMES.plannedBudgets },
+      },
+      {
+        path: '/planned/budgets/:id',
         redirect: (to) => ({
           name: ROUTES_NAMES.plannedBudgetDetails,
           params: { id: to.params.id },
@@ -587,6 +614,19 @@ const routes: RouteRecordRaw[] = [
         name: ROUTES_NAMES.verifyEmail,
         component: () => import('@/pages/auth/verify-email.vue'),
         meta: { i18nChunks: ['auth/verify-email'] },
+      },
+      {
+        path: '/forgot-password',
+        name: ROUTES_NAMES.forgotPassword,
+        component: () => import('@/pages/auth/forgot-password.vue'),
+        meta: { i18nChunks: ['auth/password-reset'] },
+      },
+      {
+        // No authPageGuard: a signed-in user who forgot their password still needs to finish the reset.
+        path: RESET_PASSWORD_PATH,
+        name: ROUTES_NAMES.resetPassword,
+        component: () => import('@/pages/auth/reset-password.vue'),
+        meta: { i18nChunks: ['auth/password-reset'] },
       },
       {
         path: '/welcome',

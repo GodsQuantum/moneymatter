@@ -22,7 +22,7 @@ const openCustomCadence = async ({ page }: { page: Page }): Promise<Locator> => 
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
 
-  await dialog.getByRole('button', { name: 'Custom', exact: true }).click();
+  await pickDialogSelect({ page, nth: 0, optionName: 'Custom' });
   // With pre-fill on the submit button reads "Next" and opens the setup questions.
   await dialog.getByRole('switch', { name: 'Smart pre-fill' }).setChecked(false);
   return dialog;
@@ -70,7 +70,7 @@ test.describe('Budget custom cadence', () => {
     await every.fill(String(MAX_DAYS));
     await expect(submit).toBeEnabled();
 
-    await pickDialogSelect({ page, nth: 0, optionName: 'Months' });
+    await pickDialogSelect({ page, nth: 1, optionName: 'Months' });
     await expect(dialog.getByText(`Enter a whole number from 1 to ${MAX_MONTHS}.`)).toBeVisible();
     await expect(submit).toBeDisabled();
 
@@ -78,7 +78,7 @@ test.describe('Budget custom cadence', () => {
     await expect(submit).toBeEnabled();
 
     await every.fill(String(MAX_MONTHS + 1));
-    await dialog.getByRole('button', { name: 'Monthly', exact: true }).click();
+    await pickDialogSelect({ page, nth: 0, optionName: /^Monthly$/ });
     await expect(submit).toBeEnabled();
   });
 
@@ -86,7 +86,7 @@ test.describe('Budget custom cadence', () => {
     const dialog = await openCustomCadence({ page });
 
     await dialog.getByPlaceholder(EVERY_PLACEHOLDER).fill(String(CUSTOM_MONTHS));
-    await pickDialogSelect({ page, nth: 0, optionName: 'Months' });
+    await pickDialogSelect({ page, nth: 1, optionName: 'Months' });
 
     const createRequest = page.waitForRequest(
       (request) => request.method() === 'POST' && /\/budget-plans$/.test(new URL(request.url()).pathname),

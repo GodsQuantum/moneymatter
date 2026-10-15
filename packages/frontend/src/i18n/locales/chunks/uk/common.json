@@ -54,7 +54,8 @@
       }
     },
     "errors": {
-      "copyToClipboardFailed": "Не вдалося скопіювати до буфера обміну"
+      "copyToClipboardFailed": "Не вдалося скопіювати до буфера обміну",
+      "settingsSaveFailed": "Не вдалося зберегти налаштування. Спробуйте ще раз."
     },
     "notifications": {
       "subscriptionCurrencyNotConnected": "Підсумок регулярних платежів не може конвертувати {currencies} у вашу базову валюту. Підключіть валюту в «Налаштування → Валюти».",

@@ -54,7 +54,8 @@
       }
     },
     "errors": {
-      "copyToClipboardFailed": "Failed to copy to clipboard"
+      "copyToClipboardFailed": "Failed to copy to clipboard",
+      "settingsSaveFailed": "Couldn't save your settings. Please try again."
     },
     "notifications": {
       "subscriptionCurrencyNotConnected": "Subscriptions summary can't convert {currencies} to your base currency. Connect the currency in Settings → Currencies.",

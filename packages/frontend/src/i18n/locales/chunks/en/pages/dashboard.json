@@ -176,6 +176,18 @@
         "utilized": "utilized",
         "noAccounts": "No accounts with credit limits"
       },
+      "cashAccounts": {
+        "vsLastMonth": "vs last month",
+        "runwayUnit": "mo",
+        "runwayLabel": "of expenses",
+        "loadFailed": "Couldn't load your accounts",
+        "runwayHint": {
+          "description": "It's generally recommended to keep an emergency fund that covers 3–6 months of your expenses.",
+          "critical": "Under 1 month: very little buffer",
+          "low": "1–3 months: below recommended",
+          "good": "3+ months: recommended range"
+        }
+      },
       "plannedOverview": {
         "title": "Planned",
         "projectedBy": "Projected by {date}",
@@ -269,6 +281,10 @@
         "creditUtilization": {
           "name": "Credit Utilization",
           "description": "Credit limit usage across your accounts"
+        },
+        "cashAccounts": {
+          "name": "Cash & Accounts",
+          "description": "Total cash across your accounts, its change since last month, and how many months of expenses it covers"
         },
         "plannedOverview": {
           "name": "Planned overview",

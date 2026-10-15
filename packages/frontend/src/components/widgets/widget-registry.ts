@@ -141,6 +141,16 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     component: () => import('@/components/widgets/net-worth-widget/index.vue'),
     needsPeriod: true,
   },
+  'cash-accounts': {
+    id: 'cash-accounts',
+    name: 'dashboard.widgets.registry.cashAccounts.name',
+    description: 'dashboard.widgets.registry.cashAccounts.description',
+    defaultColSpan: 1,
+    defaultRowSpan: 1,
+    allowedSizes: [{ colSpan: 1, rowSpan: 1, label: '1×1' }],
+    component: () => import('@/components/widgets/cash-accounts-widget/index.vue'),
+    needsPeriod: false,
+  },
   'credit-utilization': {
     id: 'credit-utilization',
     name: 'dashboard.widgets.registry.creditUtilization.name',

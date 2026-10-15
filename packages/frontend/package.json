@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vue-tsc --noEmit && vite build",
-    "lint": "oxlint .",
+    "lint": "oxlint . && node scripts/check-i18n-keys.mjs",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
     "dev": "vite --host",
     "prod": "vite --mode production",

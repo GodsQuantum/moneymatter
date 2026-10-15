@@ -6,7 +6,7 @@ import { Button } from '@/components/lib/ui/button';
 import { Label } from '@/components/lib/ui/label';
 import { Switch } from '@/components/lib/ui/switch';
 import { useFormatCurrency } from '@/composable';
-import { cn } from '@/lib/utils';
+import ImportWizardStepper from '@/pages/import-export/components/import-wizard-stepper.vue';
 import { useCategoriesStore } from '@/stores';
 import {
   BUDGET_SUGGESTION_DETAILS,
@@ -20,6 +20,7 @@ import {
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
+  LoaderCircleIcon,
   BikeIcon,
   BusIcon,
   CarIcon,
@@ -144,6 +145,10 @@ const steps = computed(() => {
   return all.filter((name) => name !== 'focus' || focusItems.value.length > 0);
 });
 const step = computed(() => steps.value[stepIndex.value]);
+const stepperSteps = computed(() =>
+  steps.value.map((name) => ({ key: name, labelKey: `budgetPlans.suggest.steps.${name}` })),
+);
+const completedStepKeys = computed(() => new Set<string>(steps.value.slice(0, stepIndex.value)));
 const isLastStep = computed(() => stepIndex.value === steps.value.length - 1);
 // An index into a list that just changed would point at a different step, or past the end.
 watch(
@@ -175,9 +180,18 @@ const goNext = () => {
 
 <template>
   <div v-if="contextQuery.isPending.value" class="grid animate-pulse gap-4" aria-hidden="true">
-    <div class="bg-muted h-5 rounded-md" />
+    <div class="bg-muted h-5 w-3/4 rounded-md" />
+    <div class="bg-muted h-6 rounded-full" />
+    <div class="grid gap-1">
+      <div class="bg-muted h-5 w-1/2 rounded-md" />
+      <div class="bg-muted h-4 w-2/3 rounded-md" />
+    </div>
     <div class="grid grid-cols-3 gap-2">
-      <div v-for="index in SKELETON_TILES" :key="index" class="bg-muted h-20 rounded-md" />
+      <div v-for="index in SKELETON_TILES" :key="index" class="bg-muted h-24 rounded-md" />
+    </div>
+    <div class="flex justify-between gap-2">
+      <div class="bg-muted h-10 w-24 rounded-md" />
+      <div class="bg-muted h-10 w-24 rounded-md" />
     </div>
   </div>
 
@@ -197,72 +211,65 @@ const goNext = () => {
       {{ $t(hasHistory ? 'budgetPlans.suggest.descriptionHistory' : 'budgetPlans.suggest.descriptionNoHistory') }}
     </p>
 
-    <ol
-      class="flex items-center justify-center gap-2"
-      :aria-label="$t('budgetPlans.suggest.step', { current: stepIndex + 1, total: steps.length })"
-    >
-      <li
-        v-for="(name, index) in steps"
-        :key="name"
-        :aria-current="index === stepIndex ? 'step' : undefined"
-        :class="
-          cn(
-            'bg-muted text-muted-foreground flex h-6 w-7 items-center justify-center rounded-md text-xs font-medium tabular-nums',
-            index < stepIndex && 'bg-primary/10 text-primary-text',
-            index === stepIndex && 'bg-primary text-primary-foreground',
-          )
-        "
-      >
-        {{ index + 1 }}
-      </li>
-    </ol>
-
-    <template v-if="step === 'home'">
-      <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.housing.question') }}</p>
-      <SuggestionTiles v-model="housing" :items="housingItems" />
-      <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.transport.question') }}</p>
-      <SuggestionTiles v-model="transport" :items="transportItems" />
-    </template>
-
-    <template v-else-if="step === 'life'">
-      <div class="flex items-center justify-between gap-3">
-        <Label for="budget-suggest-pets" class="cursor-pointer text-sm font-medium">
-          {{ $t('budgetPlans.suggest.pets.question') }}
-        </Label>
-        <Switch
-          id="budget-suggest-pets"
-          :model-value="hasPets"
-          @update:model-value="(on) => (pets = on ? 'other' : 'none')"
-        />
-      </div>
-      <template v-if="hasPets">
-        <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.pets.kindQuestion') }}</p>
-        <SuggestionTiles v-model="pets" :items="petKindItems" :columns="3" />
+    <fieldset :disabled="isSubmitting" class="contents">
+      <ImportWizardStepper
+        bare
+        :steps="stepperSteps"
+        :current-step-key="step ?? ''"
+        :completed-step-keys="completedStepKeys"
+        @navigate="(key) => (stepIndex = steps.indexOf(key as Step))"
+      />
+      <template v-if="step === 'home'">
+        <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.housing.question') }}</p>
+        <SuggestionTiles v-model="housing" :items="housingItems" />
+        <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.transport.question') }}</p>
+        <SuggestionTiles v-model="transport" :items="transportItems" />
       </template>
-      <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.eatsOut.question') }}</p>
-      <SuggestionTiles v-model="eatsOut" :items="eatsOutItems" :columns="3" />
-      <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.subscriptions.question') }}</p>
-      <SuggestionTiles v-model="subscriptions" :items="subscriptionItems" :columns="3" />
-    </template>
 
-    <template v-else-if="step === 'focus'">
-      <div>
-        <p class="text-sm font-medium">
-          {{
-            $t(hasHistory ? 'budgetPlans.suggest.focus.questionHistory' : 'budgetPlans.suggest.focus.questionNoHistory')
-          }}
-        </p>
-        <p class="text-muted-foreground text-xs">
-          {{ $t(hasHistory ? 'budgetPlans.suggest.focus.hintHistory' : 'budgetPlans.suggest.focus.hintNoHistory') }}
-        </p>
-      </div>
-      <SuggestionTiles v-model="focusCategoryIds" :items="focusItems" :columns="3" />
-    </template>
+      <template v-else-if="step === 'life'">
+        <div class="flex items-center justify-between gap-3">
+          <Label for="budget-suggest-pets" class="cursor-pointer text-sm font-medium">
+            {{ $t('budgetPlans.suggest.pets.question') }}
+          </Label>
+          <Switch
+            id="budget-suggest-pets"
+            :model-value="hasPets"
+            @update:model-value="(on) => (pets = on ? 'other' : 'none')"
+          />
+        </div>
+        <template v-if="hasPets">
+          <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.pets.kindQuestion') }}</p>
+          <SuggestionTiles v-model="pets" :items="petKindItems" :columns="3" />
+        </template>
+        <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.eatsOut.question') }}</p>
+        <SuggestionTiles v-model="eatsOut" :items="eatsOutItems" :columns="3" />
+        <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.subscriptions.question') }}</p>
+        <SuggestionTiles v-model="subscriptions" :items="subscriptionItems" :columns="3" />
+      </template>
 
-    <template v-else>
-      <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.detail.question') }}</p>
-      <SuggestionTiles v-model="detail" :items="detailItems" :columns="3" />
-    </template>
+      <template v-else-if="step === 'focus'">
+        <div>
+          <p class="text-sm font-medium">
+            {{
+              $t(
+                hasHistory
+                  ? 'budgetPlans.suggest.focus.questionHistory'
+                  : 'budgetPlans.suggest.focus.questionNoHistory',
+              )
+            }}
+          </p>
+          <p class="text-muted-foreground text-xs">
+            {{ $t(hasHistory ? 'budgetPlans.suggest.focus.hintHistory' : 'budgetPlans.suggest.focus.hintNoHistory') }}
+          </p>
+        </div>
+        <SuggestionTiles v-model="focusCategoryIds" :items="focusItems" :columns="3" />
+      </template>
+
+      <template v-else>
+        <p class="text-sm font-medium">{{ $t('budgetPlans.suggest.detail.question') }}</p>
+        <SuggestionTiles v-model="detail" :items="detailItems" :columns="3" />
+      </template>
+    </fieldset>
 
     <div class="flex items-center gap-2">
       <Button type="button" variant="outline" :disabled="isSubmitting" @click="goBack">
@@ -278,8 +285,12 @@ const goNext = () => {
       >
         {{ $t('budgetPlans.suggest.useDefaults') }}
       </Button>
-      <Button type="button" :disabled="isSubmitting" :loading="isSubmitting" @click="goNext">
-        <template v-if="!isLastStep">
+      <Button type="button" :disabled="isSubmitting" @click="goNext">
+        <template v-if="isSubmitting">
+          <LoaderCircleIcon class="size-4 animate-spin" />
+          {{ $t('budgetPlans.create.creating') }}
+        </template>
+        <template v-else-if="!isLastStep">
           {{ $t('budgetPlans.suggest.next') }}
           <ArrowRightIcon class="size-4" />
         </template>

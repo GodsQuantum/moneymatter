@@ -49,7 +49,9 @@ watch([isOpen, listRef], ([open, list]) => {
 </script>
 
 <template>
-  <div :class="cn('flex min-w-0 items-center', compact ? 'gap-0' : 'gap-1')">
+  <div
+    :class="cn('border-border bg-card flex min-w-0 items-center rounded-lg border p-0.5', compact ? 'gap-0' : 'gap-1')"
+  >
     <DesktopOnlyTooltip :content="$t('budgetPlans.period.previous')">
       <Button
         variant="ghost"

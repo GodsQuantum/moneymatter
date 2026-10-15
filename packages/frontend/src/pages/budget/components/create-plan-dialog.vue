@@ -12,7 +12,8 @@ import { Button } from '@/components/lib/ui/button';
 import { Callout } from '@/components/lib/ui/callout';
 import { Label } from '@/components/lib/ui/label';
 import { useNotificationCenter } from '@/components/notification-center';
-import { ArrowRightIcon, InfoIcon } from '@lucide/vue';
+import { ArrowRightIcon, InfoIcon, LoaderCircleIcon } from '@lucide/vue';
+import { StatusBadge } from '@/components/lib/ui/status-badge';
 import { Switch } from '@/components/lib/ui/switch';
 import { useInvalidatingMutation } from '@/composable/data-queries/use-invalidating-mutation';
 import { useDateLocale } from '@/composable/use-date-locale';
@@ -280,22 +281,26 @@ const submit = () => {
       </div>
 
       <div class="flex items-center justify-between gap-3">
-        <span class="flex items-center gap-1.5">
+        <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
           <Label for="budget-create-suggested" class="cursor-pointer text-sm font-normal">
             {{ $t('budgetPlans.create.suggestedLinesLabel') }}
           </Label>
           <ResponsiveTooltip :content="$t('budgetPlans.create.suggestedLinesHint')" content-class-name="max-w-72">
             <InfoIcon class="text-muted-foreground size-3.5 shrink-0 cursor-help" />
           </ResponsiveTooltip>
+          <StatusBadge variant="info">{{ $t('budgetPlans.create.recommended') }}</StatusBadge>
         </span>
         <Switch id="budget-create-suggested" v-model="withSuggestedLines" />
       </div>
 
       <div v-if="withSuggestedLines" class="grid gap-1">
         <div class="flex items-center justify-between gap-3">
-          <Label for="budget-create-questions" class="cursor-pointer text-sm font-normal">
-            {{ $t('budgetPlans.create.askQuestionsLabel') }}
-          </Label>
+          <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+            <Label for="budget-create-questions" class="cursor-pointer text-sm font-normal">
+              {{ $t('budgetPlans.create.askQuestionsLabel') }}
+            </Label>
+            <StatusBadge variant="info">{{ $t('budgetPlans.create.recommended') }}</StatusBadge>
+          </span>
           <Switch id="budget-create-questions" v-model="askQuestions" />
         </div>
         <p class="text-muted-foreground text-xs">{{ $t('budgetPlans.create.askQuestionsHint') }}</p>
@@ -306,9 +311,11 @@ const submit = () => {
           {{ $t('budgetPlans.suggest.next') }}
           <ArrowRightIcon class="size-4" />
         </template>
-        <template v-else>
-          {{ $t(isPending && withSuggestedLines ? 'budgetPlans.create.building' : 'budgetPlans.create.submit') }}
+        <template v-else-if="isPending">
+          <LoaderCircleIcon class="size-4 animate-spin" />
+          {{ $t('budgetPlans.create.creating') }}
         </template>
+        <template v-else>{{ $t('budgetPlans.create.submit') }}</template>
       </Button>
     </form>
   </ResponsiveDialog>

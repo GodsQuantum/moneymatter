@@ -92,6 +92,9 @@ const frameRef = ref<HTMLElement | null>(null);
 // The desktop stats strip wraps at some widths, so everything sticking below it reads its measured height.
 const stripRef = ref<HTMLElement | null>(null);
 const { height: stripHeight } = useElementSize(stripRef, undefined, { box: 'border-box' });
+// The floating panel is absolutely positioned inside the clipping frame, so the frame must be at least as tall.
+const floatingPanelRef = ref<HTMLElement | null>(null);
+const { height: floatingPanelHeight } = useElementSize(floatingPanelRef, undefined, { box: 'border-box' });
 const { rowBars } = useGridDisplayOptions();
 const { panelWidth, panelOpen, startResize, isNarrow, isPanelAttached, isPanelFloating, isPanelTab } = useFrameLayout({
   frameRef,
@@ -334,7 +337,7 @@ const openLineDialog = ({
 
 <template>
   <PageWrapper>
-    <div class="@container/budget-plan grid gap-6">
+    <div class="@container/budget-plan grid gap-2">
       <DefineOptionsMenu>
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
@@ -366,13 +369,6 @@ const openLineDialog = ({
             <DropdownMenuItem @select="isLayoutOpen = true">
               <LayoutListIcon class="size-4" />
               {{ $t('budgetPlans.options.manageLayout') }}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem as-child>
-              <a :href="`${config.docsUrl}/budgeting/start-budgeting/`" target="_blank" rel="noopener noreferrer">
-                <BookOpenIcon class="size-4" />
-                {{ $t('budgetPlans.docs.howItWorks') }}
-              </a>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -458,8 +454,24 @@ const openLineDialog = ({
           @select="(periodId) => selectPeriod({ periodId })"
         />
         <ProgressLabel v-if="!isNarrow" />
+        <Button
+          as-child
+          variant="ghost"
+          :size="isNarrow ? 'icon-sm' : 'sm'"
+          class="text-muted-foreground ml-auto shrink-0"
+        >
+          <a
+            :href="`${config.docsUrl}/budgeting/start-budgeting/`"
+            target="_blank"
+            rel="noopener noreferrer"
+            :aria-label="$t('budgetPlans.docs.howItWorks')"
+          >
+            <BookOpenIcon class="size-4" />
+            <span v-if="!isNarrow">{{ $t('budgetPlans.docs.howItWorks') }}</span>
+          </a>
+        </Button>
       </div>
-      <div v-if="isNarrow && progress" class="-mt-5"><ProgressLabel /></div>
+      <div v-if="isNarrow && progress"><ProgressLabel /></div>
 
       <BudgetTrialNotice />
 
@@ -470,9 +482,14 @@ const openLineDialog = ({
             'border-border bg-card grid min-w-0 overflow-clip rounded-lg border max-md:-mx-4 max-md:rounded-none max-md:border-x-0',
             isPanelAttached && 'grid-cols-[minmax(0,1fr)_var(--panel-width)]',
             isPanelTab && 'grid-cols-[minmax(0,1fr)_2.75rem]',
+            isPanelFloating && 'min-h-[calc(var(--strip-h)+var(--floating-panel-h)+1.25rem+2px)]',
           )
         "
-        :style="{ '--panel-width': `${panelWidth}px`, '--strip-h': `${stripHeight}px` }"
+        :style="{
+          '--panel-width': `${panelWidth}px`,
+          '--strip-h': `${stripHeight}px`,
+          '--floating-panel-h': `${floatingPanelHeight}px`,
+        }"
       >
         <div class="relative min-w-0">
           <div
@@ -516,7 +533,7 @@ const openLineDialog = ({
                 cn(
                   'min-w-0',
                   view?.pool
-                    ? 'border-border grid max-w-[520px] grid-cols-2 gap-x-7 gap-y-1 border-x px-5'
+                    ? 'border-border grid max-w-130 grid-cols-2 gap-x-7 gap-y-1 border-x px-5'
                     : 'divide-border flex flex-1 divide-x',
                 )
               "
@@ -601,7 +618,8 @@ const openLineDialog = ({
 
             <div v-if="isPanelFloating" class="sticky top-[calc(var(--header-height)+2.75rem+var(--strip-h))] z-20 h-0">
               <aside
-                class="border-border bg-card absolute top-2.5 right-2.5 flex max-h-[calc(100dvh-var(--header-height)-3.75rem-var(--strip-h))] w-[var(--panel-width)] max-w-[calc(100%-1.25rem)] overflow-hidden rounded-lg border shadow-2xl"
+                ref="floatingPanelRef"
+                class="border-border bg-card absolute top-2.5 right-2.5 flex max-h-[calc(100dvh-var(--header-height)-3.75rem-var(--strip-h))] w-(--panel-width) max-w-[calc(100%-1.25rem)] overflow-hidden rounded-lg border shadow-2xl"
               >
                 <div
                   class="border-border bg-muted/40 hover:bg-primary/20 flex w-6 shrink-0 cursor-col-resize touch-none flex-col items-center justify-center border-r transition-colors"

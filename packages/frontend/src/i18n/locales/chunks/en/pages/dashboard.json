@@ -188,6 +188,22 @@
           "good": "3+ months: recommended range"
         }
       },
+      "assetsLiabilities": {
+        "netWorth": "Net worth",
+        "owesShare": "You owe {percent} of what you own",
+        "noDebt": "No debt",
+        "assets": "Assets",
+        "liabilities": "Liabilities",
+        "loadFailed": "Couldn't load your assets and liabilities",
+        "buckets": {
+          "cash": "Cash",
+          "investments": "Investments",
+          "ventures": "Ventures",
+          "vehicles": "Vehicles",
+          "loans": "Loans",
+          "creditAndOverdrafts": "Credit & overdrafts"
+        }
+      },
       "plannedOverview": {
         "title": "Planned",
         "projectedBy": "Projected by {date}",
@@ -285,6 +301,10 @@
         "cashAccounts": {
           "name": "Cash & Accounts",
           "description": "Total cash across your accounts, its change since last month, and how many months of expenses it covers"
+        },
+        "assetsLiabilities": {
+          "name": "Assets & Liabilities",
+          "description": "What you own, what you owe, and the net worth between them"
         },
         "plannedOverview": {
           "name": "Planned overview",

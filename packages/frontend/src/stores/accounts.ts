@@ -116,7 +116,7 @@ export const useAccountsStore = defineStore('accounts', () => {
       queryKey: VUE_QUERY_CACHE_KEYS.accountGroups,
     });
 
-    if ('initialBalance' in data || 'currentBalance' in data) {
+    if (['initialBalance', 'currentBalance', 'creditLimit', 'excludeFromStats'].some((field) => field in data)) {
       queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];

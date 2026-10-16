@@ -321,6 +321,7 @@
       "sessionExpiredReconnect": "Сесія банку закінчилася. Будь ласка, перепідключіть свій банківський рахунок, щоб продовжити синхронізацію.",
       "apiBadRequestError": "Помилка API Enable Banking: {{message}}",
       "apiGeneralError": "Помилка API Enable Banking: {{message}}",
+      "rateLimitExceeded": "Досягнуто ліміту запитів банку. Деякі банки дозволяють лише кілька запитів даних на день і скидають ліміт опівночі. Будь ласка, спробуйте пізніше.",
       "redirectUriNotAllowed": "У вашому застосунку Enable Banking відсутній необхідний URL переадресації. Будь ласка, увійдіть до панелі Enable Banking, відредагуйте свій застосунок і додайте цей URL до дозволених URL переадресації: {{redirectUrl}}"
     },
     "lunchflow": {

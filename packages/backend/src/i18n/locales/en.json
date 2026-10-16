@@ -319,6 +319,7 @@
       "sessionExpiredReconnect": "Bank session expired. Please reconnect your bank account to continue syncing.",
       "apiBadRequestError": "Enable Banking API error: {{message}}",
       "apiGeneralError": "Enable Banking API error: {{message}}",
+      "rateLimitExceeded": "The bank's rate limit was reached. Some banks only allow a few data requests per day and reset the limit at midnight. Please try again later.",
       "redirectUriNotAllowed": "Your Enable Banking application is missing the required redirect URL. Please log in to the Enable Banking dashboard, edit your application, and add this URL to the allowed redirect URLs: {{redirectUrl}}"
     },
     "lunchflow": {

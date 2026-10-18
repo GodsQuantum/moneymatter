@@ -42,20 +42,6 @@ const {
 
 const budgets = computed(() => budgetsList.value ?? []);
 
-const statsQueries = useQueries({
-  queries: computed(() =>
-    budgets.value.map((budget) => ({
-      queryKey: [...VUE_QUERY_CACHE_KEYS.budgetStats, budget.id],
-      queryFn: () => loadBudgetStats({ budgetId: budget.id }),
-      staleTime: Infinity,
-    })),
-  ),
-});
-
-const statsById = computed(
-  () => new Map(budgets.value.map((budget, index) => [budget.id, statsQueries.value[index]] as const)),
-);
-
 const search = ref('');
 const typeFilter = ref<'all' | BUDGET_TYPES>('all');
 const showArchived = ref(false);
@@ -92,6 +78,22 @@ const groups = computed(() => {
     return [{ key, items, visible, hiddenCount: key === 'ended' ? items.length - visible.length : 0 }];
   });
 });
+
+const visibleBudgets = computed(() => groups.value.flatMap((group) => group.visible));
+
+const statsQueries = useQueries({
+  queries: computed(() =>
+    visibleBudgets.value.map((budget) => ({
+      queryKey: [...VUE_QUERY_CACHE_KEYS.budgetStats, budget.id],
+      queryFn: () => loadBudgetStats({ budgetId: budget.id }),
+      staleTime: Infinity,
+    })),
+  ),
+});
+
+const statsById = computed(
+  () => new Map(visibleBudgets.value.map((budget, index) => [budget.id, statsQueries.value[index]] as const)),
+);
 
 const hasVisibleRows = computed(() => groups.value.some((group) => group.visible.length > 0));
 const hasArchivedMatches = computed(() => groups.value.some((group) => group.key === 'archived'));

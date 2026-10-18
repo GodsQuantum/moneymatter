@@ -14,6 +14,7 @@ import { registerAssignTagsToTransaction } from './tools/assign-tags-to-transact
 import { registerBulkUpdateTransactions } from './tools/bulk-update-transactions';
 import { registerCreateAttachmentUploadUrl } from './tools/create-attachment-upload-url';
 import { registerCreateBudget } from './tools/create-budget';
+import { registerCreateBudgetLine } from './tools/create-budget-line';
 import { registerCreateCategory } from './tools/create-category';
 import { registerCreateInvestmentTransaction } from './tools/create-investment-transaction';
 import { registerCreatePayee } from './tools/create-payee';
@@ -25,6 +26,7 @@ import { registerCreateTransaction } from './tools/create-transaction';
 import { registerCreateTransactionAutomation } from './tools/create-transaction-automation';
 import { registerCreateTransactionGroup } from './tools/create-transaction-group';
 import { registerDeleteBudget } from './tools/delete-budget';
+import { registerDeleteBudgetLine } from './tools/delete-budget-line';
 import { registerDeleteCategory } from './tools/delete-category';
 import { registerDeleteInvestmentTransaction } from './tools/delete-investment-transaction';
 import { registerDeletePayee } from './tools/delete-payee';
@@ -83,6 +85,7 @@ import { registerUnlinkTransactionFromPortfolio } from './tools/unlink-transacti
 import { registerUnlinkTransactionsFromSubscription } from './tools/unlink-transactions-from-subscription';
 import { registerUnlinkTransfer } from './tools/unlink-transfer';
 import { registerUpdateBudget } from './tools/update-budget';
+import { registerUpdateBudgetLine } from './tools/update-budget-line';
 import { registerUpdateCategory } from './tools/update-category';
 import { registerUpdateInvestmentTransaction } from './tools/update-investment-transaction';
 import { registerUpdatePayee } from './tools/update-payee';
@@ -194,6 +197,9 @@ export function createMcpServer(): McpServer {
   registerAddTransactionsToBudget(server);
   registerRemoveTransactionsFromBudget(server);
   registerGetBudgetSpendingStats(server);
+  registerCreateBudgetLine(server);
+  registerUpdateBudgetLine(server);
+  registerDeleteBudgetLine(server);
 
   // Analytics
   registerGetSpendingByCategories(server);

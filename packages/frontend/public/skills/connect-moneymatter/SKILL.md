@@ -56,14 +56,17 @@ page.
 | `search_transactions`                   | Filter transactions by date, category, tag, amount, etc.                                                         |
 | `get_categories`                        | List spending/income categories                                                                                  |
 | `get_tags`                              | List transaction tags                                                                                            |
-| `get_budgets`                           | Trackers ("budget" in tool names) with progress and overspend state                                              |
+| `get_budgets`                           | Trackers ("budget" in tool names) with limits, categories and lines                                              |
 | `create_budget`                         | Create a new tracker with limit, date range, categories (`finance:write`)                                        |
-| `update_budget`                         | Update name, date range, limit, or categories of a tracker (`finance:write`)                                     |
+| `update_budget`                         | Update name, date range, limit (null clears), or categories of a tracker (`finance:write`)                       |
 | `delete_budget`                         | Permanently delete a tracker and its transaction links (`finance:delete`)                                        |
 | `archive_budget`                        | Archive or restore a tracker — active ↔ archived (`finance:write`)                                               |
 | `add_transactions_to_budget`            | Link transactions to a manual tracker (`finance:write`)                                                          |
 | `remove_transactions_from_budget`       | Unlink transactions from a tracker (`finance:write`)                                                             |
-| `get_budget_spending_stats`             | Category breakdown and time-series spending for a tracker                                                        |
+| `get_budget_spending_stats`             | Category breakdown, time-series, per-line spent and "other" spending for a tracker                               |
+| `create_budget_line`                    | Add a line (category set + optional limit) to a tracker (`finance:write`)                                        |
+| `update_budget_line`                    | Update a tracker line's name, categories, limit, or position (`finance:write`)                                   |
+| `delete_budget_line`                    | Permanently delete a tracker line (`finance:delete`)                                                             |
 | `get_spending_by_categories`            | Aggregate spending by category over a range                                                                      |
 | `get_cash_flow`                         | Income vs expenses over a range                                                                                  |
 | `get_balance_history`                   | Time-series of account balances                                                                                  |
@@ -159,6 +162,10 @@ multi-currency data.
   saved rule in the app. The first rule that applies an action wins. Test conditions with `preview_transaction_automation` before
   saving a rule, and pass the full current id set to
   `reorder_transaction_automations`.
+- Tracker lines split a tracker's spending into named category sets, each with
+  an optional limit. A transaction lands in at most one line: the first by
+  `position` whose categories (expanded to children) contain it. Spending that
+  matches no line is reported as `otherSpent` by `get_budget_spending_stats`.
 - Portfolio queries are gated by `portfolioId`. Call `get_portfolios` first
   to discover ids before calling `get_portfolio_summary`,
   `get_portfolio_holdings`, or `get_portfolio_balances`.

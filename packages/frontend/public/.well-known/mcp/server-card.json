@@ -64,7 +64,7 @@
     },
     {
       "name": "get_budgets",
-      "description": "Retrieve active and historical trackers (called budgets in tool names) with progress and overspending details."
+      "description": "Retrieve active and historical trackers (called budgets in tool names) with their limits, categories, and lines."
     },
     {
       "name": "create_budget",
@@ -92,7 +92,19 @@
     },
     {
       "name": "get_budget_spending_stats",
-      "description": "Spending breakdown by category and time-series of expense vs income for a tracker."
+      "description": "Spending breakdown by category, time-series of expense vs income, and per-line spent for a tracker."
+    },
+    {
+      "name": "create_budget_line",
+      "description": "Add a line (named category set with an optional limit) to a tracker."
+    },
+    {
+      "name": "update_budget_line",
+      "description": "Update a tracker line's name, categories, limit, or position."
+    },
+    {
+      "name": "delete_budget_line",
+      "description": "Permanently delete a line from a tracker."
     },
     {
       "name": "get_spending_by_categories",

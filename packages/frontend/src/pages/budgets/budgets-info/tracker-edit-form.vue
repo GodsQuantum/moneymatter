@@ -15,7 +15,7 @@ import { useI18n } from 'vue-i18n';
 import TrackerLogo from '../components/tracker-logo.vue';
 import { reportTrackerError, useInvalidateTracker } from '../components/use-tracker-actions';
 import { parseTrackerDate } from '../tracker-time-status';
-import { buildBudgetEditPayload } from './build-budget-edit-payload';
+import { buildBudgetPayload } from '../build-budget-payload';
 
 const props = defineProps<{ budget: BudgetModel }>();
 const emit = defineEmits<{ saved: []; cancel: [] }>();
@@ -28,7 +28,7 @@ const isCategoryTracker = props.budget.type === BUDGET_TYPES.category;
 
 const form = ref({
   name: props.budget.name,
-  limitAmount: (props.budget.limitAmount ?? null) as string | number | null,
+  limitAmount: props.budget.limitAmount as string | number | null,
   startDate: parseTrackerDate(props.budget.startDate),
   endDate: parseTrackerDate(props.budget.endDate),
   categoryIds: (props.budget.categories?.map((c) => c.id) ?? []) as string[],
@@ -80,7 +80,7 @@ const handleSubmit = () => {
   mutate({
     budgetId: props.budget.id,
     payload: {
-      ...buildBudgetEditPayload({
+      ...buildBudgetPayload({
         name: form.value.name,
         limitAmount: form.value.limitAmount,
         startDate: form.value.startDate,

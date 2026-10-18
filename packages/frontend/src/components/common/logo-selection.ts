@@ -1,4 +1,4 @@
-import type { EntityLogoPayload, EntityLogoWritePayload } from '@bt/shared/types';
+import type { EntityLogoFields, EntityLogoPayload, EntityLogoWritePayload } from '@bt/shared/types';
 
 /**
  * What the logo picker hands back: a brand domain resolved through logo.dev, a
@@ -124,3 +124,11 @@ export const toLogoDisplayProps = ({ selection }: { selection: LogoSelection | n
 /** BrandLogo props for an entity's stored logo fields. */
 export const toEntityLogoDisplayProps = (entity: EntityLogoPayload) =>
   toLogoDisplayProps({ selection: toLogoSelection(entity) });
+
+export const pickLogoFields = (source: EntityLogoPayload): EntityLogoFields => ({
+  logoDomain: source.logoDomain ?? null,
+  logoInitials: source.logoInitials ?? null,
+  logoColor: source.logoColor ?? null,
+  logoIcon: source.logoIcon ?? null,
+  logoImageId: source.logoImageId ?? null,
+});

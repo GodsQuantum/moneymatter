@@ -35,6 +35,7 @@ import { computed, onMounted, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
+import DeleteTrackerDialog from '../components/delete-tracker-dialog.vue';
 import TrackerLogo from '../components/tracker-logo.vue';
 import { useTrackerActions } from '../components/use-tracker-actions';
 import {
@@ -61,7 +62,7 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const { formatBaseCurrency } = useFormatCurrency();
-const { archive, unarchive, toggleArchive, duplicate, remove } = useTrackerActions();
+const { archive, unarchive, toggleArchive, duplicate } = useTrackerActions();
 
 const budgetId = computed(() => props.budget.id);
 const { isOwner, canManage, canWrite, isSharedWithCaller, ownerHandle } = useBudgetAccess(toRef(() => props.budget));
@@ -274,8 +275,6 @@ onMounted(() => {
 });
 
 const isArchivePending = computed(() => archive.isPending.value || unarchive.isPending.value);
-const handleDelete = () =>
-  remove.mutate({ budgetId: budgetId.value, redirect: true }, { onSuccess: () => (isDeleteOpen.value = false) });
 
 const chipClass = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap';
 </script>
@@ -499,16 +498,7 @@ const chipClass = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-
       <BudgetSharingPanel :budget="budget" />
     </ResponsiveDialog>
 
-    <ResponsiveAlertDialog
-      v-model:open="isDeleteOpen"
-      :confirm-label="$t('budgets.list.delete')"
-      confirm-variant="destructive"
-      :confirm-disabled="remove.isPending.value"
-      @confirm="handleDelete"
-    >
-      <template #title>{{ $t('budgets.list.deleteDialog.title') }}</template>
-      <template #description>{{ $t('budgets.list.deleteDialog.description') }}</template>
-    </ResponsiveAlertDialog>
+    <DeleteTrackerDialog v-model:open="isDeleteOpen" :budget-id="budgetId" redirect />
 
     <ResponsiveAlertDialog
       v-model:open="isRemoveLimitsOpen"

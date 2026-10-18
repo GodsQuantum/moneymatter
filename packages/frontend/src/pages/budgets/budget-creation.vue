@@ -17,11 +17,11 @@ import { ROUTES_NAMES } from '@/routes/constants';
 import { useOnboardingStore } from '@/stores/onboarding';
 import { BUDGET_TYPES } from '@bt/shared/types';
 import { useMutation, useQueryClient } from '@tanstack/vue-query';
-import { endOfDay, startOfDay } from 'date-fns';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
+import { buildBudgetPayload } from './build-budget-payload';
 import TrackerLogo from './components/tracker-logo.vue';
 import { reportTrackerError } from './components/use-tracker-actions';
 
@@ -100,12 +100,8 @@ const submit = () => {
   const { name, type, categoryIds, startDate, endDate, limitAmount, autoInclude, logo } = form.value;
   if (!name) return;
   createBudgetItem({
-    name,
+    ...buildBudgetPayload({ name, limitAmount, startDate, endDate, categoryIds }),
     type,
-    categoryIds,
-    startDate: startDate ? startOfDay(startDate) : startDate,
-    endDate: endDate ? endOfDay(endDate) : endDate,
-    limitAmount,
     autoInclude,
     ...toOptionalLogoPayload({ selection: logo }),
   });

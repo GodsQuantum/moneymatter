@@ -36,10 +36,10 @@ export default class Budgets extends Model {
   type!: BUDGET_TYPES;
 
   @Column({ type: DataType.DATE, allowNull: true })
-  startDate!: Date;
+  startDate!: Date | null;
 
   @Column({ type: DataType.DATE, allowNull: true })
-  endDate!: Date;
+  endDate!: Date | null;
 
   @Column({ defaultValue: false, type: DataType.BOOLEAN })
   autoInclude!: boolean;
@@ -63,7 +63,7 @@ export default class Budgets extends Model {
   logoImageId!: string | null;
 
   @MoneyField({ storage: 'cents', allowNull: true })
-  declare limitAmount: Money;
+  declare limitAmount: Money | null;
 
   @ForeignKey(() => Users)
   @Column({ allowNull: false, type: DataType.INTEGER })

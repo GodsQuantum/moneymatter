@@ -41,10 +41,11 @@ export interface BudgetModel extends EntityLogoFields {
   status: string;
   name: string;
   type: BUDGET_TYPES;
-  startDate?: Date;
-  endDate?: Date;
-  limitAmount?: number;
-  autoInclude?: boolean;
+  startDate: Date | null;
+  endDate: Date | null;
+  /** Decimal; null = no overall limit. */
+  limitAmount: number | null;
+  autoInclude: boolean;
   /** The "Archive?" suggestion chip stays hidden once the user opts out for this tracker. */
   archivePromptDismissed: boolean;
   /**

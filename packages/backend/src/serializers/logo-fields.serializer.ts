@@ -5,6 +5,8 @@
  * its API response.
  */
 import type { EntityLogoFields } from '@bt/shared/types';
+import { LOGO_FIELD_KEYS } from '@services/brand-logos/apply-manual-logo-patch';
+import pick from 'lodash/pick';
 
 export const EMPTY_LOGO_FIELDS: EntityLogoFields = {
   logoDomain: null,
@@ -15,11 +17,5 @@ export const EMPTY_LOGO_FIELDS: EntityLogoFields = {
 };
 
 export function serializeLogoFields({ entity }: { entity: EntityLogoFields }): EntityLogoFields {
-  return {
-    logoDomain: entity.logoDomain,
-    logoInitials: entity.logoInitials,
-    logoColor: entity.logoColor,
-    logoIcon: entity.logoIcon,
-    logoImageId: entity.logoImageId,
-  };
+  return pick(entity, LOGO_FIELD_KEYS);
 }

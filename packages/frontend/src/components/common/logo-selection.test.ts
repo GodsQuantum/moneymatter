@@ -4,6 +4,7 @@ import {
   DEFAULT_MONOGRAM_COLOR,
   type LogoSelection,
   logoSelectionKey,
+  pickLogoFields,
   toLogoDisplayProps,
   toLogoPatch,
   toLogoPayload,
@@ -271,6 +272,19 @@ describe('toLogoDisplayProps', () => {
     expect(toLogoDisplayProps({ selection: { kind: 'image-upload', dataUrl: 'data:image/webp;base64,AAA' } })).toEqual({
       ...EMPTY_DISPLAY,
       imageDataUrl: 'data:image/webp;base64,AAA',
+    });
+  });
+});
+
+describe('pickLogoFields', () => {
+  it('keeps only the logo fields and fills absent ones with null', () => {
+    const payee = { name: 'Netflix', logoDomain: 'netflix.com' };
+    expect(pickLogoFields(payee)).toEqual({
+      logoDomain: 'netflix.com',
+      logoInitials: null,
+      logoColor: null,
+      logoIcon: null,
+      logoImageId: null,
     });
   });
 });

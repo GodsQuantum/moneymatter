@@ -3,6 +3,7 @@ import { t } from '@i18n/index';
 import { ValidationError } from '@js/errors';
 
 export const LOGO_SLOT_KEYS = ['logoDomain', 'logoInitials', 'logoIcon', 'logoImageId'] as const;
+export const LOGO_FIELD_KEYS = [...LOGO_SLOT_KEYS, 'logoColor'] as const;
 
 /**
  * Turns the logo keys of a write payload into the columns to write: absent key

@@ -1,3 +1,4 @@
+import { pickLogoFields } from '@/components/common/logo-selection';
 import type { EntityLogoFields, RecordId } from '@bt/shared/types';
 import { isEqual } from 'lodash-es';
 
@@ -9,14 +10,6 @@ export interface SelectedPayee extends EntityLogoFields {
 export interface PayeeLookupEntry extends EntityLogoFields {
   name: string;
 }
-
-export const pickLogoFields = (source: Partial<EntityLogoFields>): EntityLogoFields => ({
-  logoDomain: source.logoDomain ?? null,
-  logoInitials: source.logoInitials ?? null,
-  logoColor: source.logoColor ?? null,
-  logoIcon: source.logoIcon ?? null,
-  logoImageId: source.logoImageId ?? null,
-});
 
 /**
  * Refresh the display name/logo of each already-selected payee from a freshly

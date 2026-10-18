@@ -9,7 +9,7 @@ import {
   type TrackerLinePayload,
 } from '@bt/shared/types';
 
-export interface EditBudgetPayload extends EntityLogoWritePayload {
+interface EditBudgetPayload extends EntityLogoWritePayload {
   name?: string;
   limitAmount?: number | null;
   categoryIds?: string[];
@@ -30,19 +30,13 @@ interface CreateBudgetPayload extends EntityLogoWritePayload {
   name: string;
   type?: BUDGET_TYPES;
   categoryIds?: string[];
-  startDate?: Date | null;
-  endDate?: Date | null;
+  startDate?: string | null;
+  endDate?: string | null;
   limitAmount?: number | null;
   autoInclude?: boolean;
 }
 
-export const createBudget = async (payload: CreateBudgetPayload): Promise<BudgetModel> => {
-  const params = {
-    ...payload,
-    limitAmount: payload.limitAmount && payload.limitAmount > 0 ? payload.limitAmount : null,
-  };
-  return api.post('/budgets', params);
-};
+export const createBudget = async (payload: CreateBudgetPayload): Promise<BudgetModel> => api.post('/budgets', payload);
 
 export const deleteBudget = async (budgetId: string) => api.delete(`/budgets/${budgetId}`);
 

@@ -7,9 +7,11 @@ import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
 import TrackerLineCategories from '@models/tracker-line-categories.model';
 import TrackerLines from '@models/tracker-lines.model';
+import { LOGO_FIELD_KEYS } from '@services/brand-logos/apply-manual-logo-patch';
 import { getBudgetById } from '@services/budget.service';
 import { withTransaction } from '@services/common/with-transaction';
 import { copyLogoImageIfPresent } from '@services/logo-images/logo-images.service';
+import pick from 'lodash/pick';
 
 import { authorizeBudgetAccess } from './authorize-budget-access';
 
@@ -48,10 +50,7 @@ export const duplicateBudget = withTransaction(async ({ userId, id }: { userId: 
     endDate: null,
     autoInclude: false,
     archivePromptDismissed: false,
-    logoDomain: source.logoDomain,
-    logoInitials: source.logoInitials,
-    logoColor: source.logoColor,
-    logoIcon: source.logoIcon,
+    ...pick(source, LOGO_FIELD_KEYS),
     logoImageId: await copyLogoImageIfPresent({ id: source.logoImageId }),
   });
 

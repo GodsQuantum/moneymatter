@@ -1,8 +1,6 @@
 import { EntityLogoPayload, ManualLogoWrite } from '@bt/shared/types';
 
-import { applyManualLogoPatch, LOGO_SLOT_KEYS } from './apply-manual-logo-patch';
-
-const LOGO_KEYS = [...LOGO_SLOT_KEYS, 'logoColor'] as const;
+import { applyManualLogoPatch, LOGO_FIELD_KEYS } from './apply-manual-logo-patch';
 
 /**
  * The logo columns to write for an entity a background resolver also writes.
@@ -21,7 +19,7 @@ export const resolveManualLogoFields = ({
 }): ManualLogoWrite => {
   const patch = applyManualLogoPatch({ patch: input, stored });
 
-  const changesStoredValue = LOGO_KEYS.some((key) => key in patch && patch[key] !== (stored[key] ?? null));
+  const changesStoredValue = LOGO_FIELD_KEYS.some((key) => key in patch && patch[key] !== (stored[key] ?? null));
   if (!changesStoredValue) {
     return {};
   }

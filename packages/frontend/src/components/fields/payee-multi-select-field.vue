@@ -59,13 +59,12 @@
 
 <script setup lang="ts">
 import BrandLogo from '@/components/common/brand-logo.vue';
-import { toEntityLogoDisplayProps } from '@/components/common/logo-selection';
+import { pickLogoFields, toEntityLogoDisplayProps } from '@/components/common/logo-selection';
 import MultiSelectField from '@/components/fields/multi-select-field.vue';
 import {
   type PayeeLookupEntry,
   type SelectedPayee,
   hydrateSelectedPayees,
-  pickLogoFields,
 } from '@/components/fields/payee-multi-select-field.helpers';
 import { ScrollArea } from '@/components/lib/ui/scroll-area';
 import { useNotificationCenter } from '@/components/notification-center';

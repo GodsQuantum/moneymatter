@@ -1,26 +1,29 @@
-import type { EditBudgetPayload } from '@/api/budgets';
 import { endOfDay, startOfDay } from 'date-fns';
 
-interface BudgetEditFormValues {
+interface BudgetFormValues {
   name: string;
   limitAmount: number | string | null | undefined;
-  startDate: Date | null;
-  endDate: Date | null;
-  /** Only for category trackers. */
+  startDate: Date | null | undefined;
+  endDate: Date | null | undefined;
   categoryIds?: string[];
 }
 
-type BudgetEditPayload = Required<Pick<EditBudgetPayload, 'name' | 'limitAmount' | 'startDate' | 'endDate'>> &
-  Pick<EditBudgetPayload, 'categoryIds'>;
+interface BudgetPayload {
+  name: string;
+  limitAmount: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  categoryIds?: string[];
+}
 
 /** Anything but a positive finite number clears the limit (`null`). */
-export const buildBudgetEditPayload = ({
+export const buildBudgetPayload = ({
   name,
   limitAmount,
   startDate,
   endDate,
   categoryIds,
-}: BudgetEditFormValues): BudgetEditPayload => {
+}: BudgetFormValues): BudgetPayload => {
   const limit = limitAmount === '' || limitAmount == null ? NaN : Number(limitAmount);
 
   return {

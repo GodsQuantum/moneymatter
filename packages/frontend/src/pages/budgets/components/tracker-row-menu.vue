@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ResponsiveAlertDialog from '@/components/common/responsive-alert-dialog.vue';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,13 +14,14 @@ import { ArchiveIcon, ArchiveRestoreIcon, CopyIcon, EllipsisIcon, ExternalLinkIc
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import DeleteTrackerDialog from './delete-tracker-dialog.vue';
 import { useTrackerActions } from './use-tracker-actions';
 
 const props = defineProps<{ budget: BudgetModel }>();
 
 const router = useRouter();
 const { isOwner, canManage } = useBudgetAccess(() => props.budget);
-const { toggleArchive, duplicate, remove } = useTrackerActions();
+const { toggleArchive, duplicate } = useTrackerActions();
 
 const isDeleteOpen = ref(false);
 const isArchived = computed(() => props.budget.status === BUDGET_STATUSES.archived);
@@ -29,9 +29,6 @@ const isArchived = computed(() => props.budget.status === BUDGET_STATUSES.archiv
 const openDetails = () => {
   router.push({ name: ROUTES_NAMES.plannedBudgetDetails, params: { id: props.budget.id } });
 };
-
-const handleDelete = () =>
-  remove.mutate({ budgetId: props.budget.id }, { onSuccess: () => (isDeleteOpen.value = false) });
 </script>
 
 <template>
@@ -78,15 +75,6 @@ const handleDelete = () =>
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <ResponsiveAlertDialog
-      v-model:open="isDeleteOpen"
-      :confirm-label="$t('budgets.list.delete')"
-      confirm-variant="destructive"
-      :confirm-disabled="remove.isPending.value"
-      @confirm="handleDelete"
-    >
-      <template #title>{{ $t('budgets.list.deleteDialog.title') }}</template>
-      <template #description>{{ $t('budgets.list.deleteDialog.description') }}</template>
-    </ResponsiveAlertDialog>
+    <DeleteTrackerDialog v-model:open="isDeleteOpen" :budget-id="budget.id" />
   </div>
 </template>

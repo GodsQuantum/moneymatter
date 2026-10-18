@@ -68,9 +68,9 @@ describe('getTrackerTimeStatus', () => {
 
 describe('getTrackerGroup', () => {
   it('puts archived trackers in the archived group regardless of dates', () => {
-    expect(
-      getTrackerGroup({ budget: { status: BUDGET_STATUSES.archived, startDate: undefined, endDate: undefined }, now }),
-    ).toBe('archived');
+    expect(getTrackerGroup({ budget: { status: BUDGET_STATUSES.archived, startDate: null, endDate: null }, now })).toBe(
+      'archived',
+    );
   });
 });
 

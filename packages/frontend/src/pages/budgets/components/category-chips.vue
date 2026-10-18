@@ -3,16 +3,14 @@ import ResponsiveTooltip from '@/components/common/responsive-tooltip.vue';
 import type { EmbeddedCategoryModel } from '@bt/shared/types';
 import { computed } from 'vue';
 
-const props = withDefaults(
-  defineProps<{
-    categories: Pick<EmbeddedCategoryModel, 'id' | 'name' | 'color'>[];
-    visible?: number;
-    collapsed?: boolean;
-  }>(),
-  { visible: 2 },
-);
+const props = defineProps<{
+  categories: Pick<EmbeddedCategoryModel, 'id' | 'name' | 'color'>[];
+  collapsed?: boolean;
+}>();
 
-const visibleCount = computed(() => (props.collapsed ? 0 : props.visible));
+const VISIBLE_CATEGORIES = 2;
+
+const visibleCount = computed(() => (props.collapsed ? 0 : VISIBLE_CATEGORIES));
 const shown = computed(() => props.categories.slice(0, visibleCount.value));
 const hidden = computed(() => props.categories.slice(visibleCount.value));
 </script>

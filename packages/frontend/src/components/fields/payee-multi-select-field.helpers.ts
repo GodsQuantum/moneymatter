@@ -1,4 +1,5 @@
 import type { EntityLogoFields, RecordId } from '@bt/shared/types';
+import { isEqual } from 'lodash-es';
 
 export interface SelectedPayee extends EntityLogoFields {
   id: RecordId;
@@ -8,6 +9,14 @@ export interface SelectedPayee extends EntityLogoFields {
 export interface PayeeLookupEntry extends EntityLogoFields {
   name: string;
 }
+
+export const pickLogoFields = (source: Partial<EntityLogoFields>): EntityLogoFields => ({
+  logoDomain: source.logoDomain ?? null,
+  logoInitials: source.logoInitials ?? null,
+  logoColor: source.logoColor ?? null,
+  logoIcon: source.logoIcon ?? null,
+  logoImageId: source.logoImageId ?? null,
+});
 
 /**
  * Refresh the display name/logo of each already-selected payee from a freshly
@@ -28,16 +37,7 @@ export const hydrateSelectedPayees = ({
   selected.map((sel) => {
     const fresh = lookup.get(sel.id);
     if (!fresh) return sel;
-    const nextLogo = fresh.logoDomain ?? null;
-    const nextInitials = fresh.logoInitials ?? null;
-    const nextColor = fresh.logoColor ?? null;
-    if (
-      fresh.name === sel.name &&
-      nextLogo === sel.logoDomain &&
-      nextInitials === sel.logoInitials &&
-      nextColor === sel.logoColor
-    ) {
-      return sel;
-    }
-    return { id: sel.id, name: fresh.name, logoDomain: nextLogo, logoInitials: nextInitials, logoColor: nextColor };
+    const nextLogo = pickLogoFields(fresh);
+    if (fresh.name === sel.name && isEqual(nextLogo, pickLogoFields(sel))) return sel;
+    return { id: sel.id, name: fresh.name, ...nextLogo };
   });

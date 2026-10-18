@@ -18,7 +18,7 @@ import { buildDateFilter } from './utils/build-date-filter';
 import { fetchBudgetRefundPairs } from './utils/refund-pairs';
 import { buildSharedBudgetMergeMap } from './utils/shared-category-merge-map';
 
-interface StatsResponse {
+export interface StatsResponse {
   summary: {
     actualIncome: number;
     actualExpense: number;
@@ -29,7 +29,7 @@ interface StatsResponse {
     lastTransactionDate: string | null; // ISO date string of latest transaction
   };
   /** Cents, in line `position` order. */
-  lines: { lineId: string; spent: number }[];
+  lines: { lineId: RecordId; spent: number }[];
   /** Cents of expenses no line matched. */
   otherSpent: number;
 }

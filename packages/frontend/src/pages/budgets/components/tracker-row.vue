@@ -5,7 +5,7 @@ import { useBudgetAccess } from '@/composable/use-budget-access';
 import { cn } from '@/lib/utils';
 import { ROUTES_NAMES } from '@/routes';
 import { BUDGET_STATUSES, BUDGET_TYPES, type BudgetModel, type BudgetStatsResponse } from '@bt/shared/types';
-import { TargetIcon } from '@lucide/vue';
+import { compact } from 'lodash-es';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -17,6 +17,8 @@ import {
 } from '../tracker-time-status';
 import { utilizationClasses } from '../utilization-classes';
 import CategoryChips from './category-chips.vue';
+import TrackerLogo from './tracker-logo.vue';
+import { TRACKER_ROW_GRID } from './tracker-row-grid';
 import TrackerRowMenu from './tracker-row-menu.vue';
 import UtilizationBar from './utilization-bar.vue';
 
@@ -65,8 +67,6 @@ const categoriesPiece = computed<CaptionPiece | null>(() =>
   isCategory.value && props.budget.categories?.length ? { key: 'categories', isCategories: true } : null,
 );
 
-const compact = <T,>(items: (T | null | false | '' | undefined)[]): T[] => items.filter((item): item is T => !!item);
-
 const desktopCaption = computed(() =>
   compact<CaptionPiece>([
     dateRange.value && { key: 'dates', text: dateRange.value },
@@ -98,15 +98,13 @@ const showArchiveSuggestion = computed(() => canManage.value && shouldSuggestArc
   <div
     :class="
       cn(
-        'hover:bg-foreground/5 has-[a:focus-visible]:bg-foreground/5 relative grid min-h-13 grid-cols-[28px_minmax(0,1fr)_84px_36px] items-center gap-2 py-2.5 pr-2 pl-3 text-[13px] transition-colors',
-        '@2xl/trackers:grid-cols-[28px_minmax(0,1.6fr)_minmax(0,1fr)_130px_90px_28px] @2xl/trackers:gap-3 @2xl/trackers:px-3.5',
+        TRACKER_ROW_GRID,
+        'hover:bg-foreground/5 has-[a:focus-visible]:bg-foreground/5 relative text-[13px] transition-colors',
         isArchived && 'opacity-60',
       )
     "
   >
-    <div class="bg-muted text-muted-foreground grid size-7 place-items-center rounded-[7px]">
-      <TargetIcon class="size-3.5" />
-    </div>
+    <TrackerLogo :tracker="budget" class="size-7 rounded-[7px]" />
 
     <div class="min-w-0">
       <div class="flex min-w-0 items-center gap-1.5 font-semibold">

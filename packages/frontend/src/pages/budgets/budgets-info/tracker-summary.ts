@@ -2,7 +2,7 @@ import type { BudgetStatsResponse } from '@bt/shared/types';
 
 import type { TrackerTimeStatus } from '../tracker-time-status';
 
-export interface TrackerLimitSummary {
+interface TrackerLimitSummary {
   spent: number;
   left: number;
   /** Spent as a percentage of the limit. */

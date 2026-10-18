@@ -123,7 +123,7 @@ describe('getCategorySplits', () => {
 });
 
 describe('getCumulativeSeries', () => {
-  it('accumulates expenses in chronological order', () => {
+  it('accumulates net spent (expense minus income) in chronological order', () => {
     const series = getCumulativeSeries({
       periods: [
         { periodStart: '2026-03-02', periodEnd: '2026-03-02', expense: 5, income: 0 },
@@ -131,8 +131,19 @@ describe('getCumulativeSeries', () => {
       ],
     });
     expect(series.map((p) => [p.periodStart, p.cumulative])).toEqual([
-      ['2026-03-01', 10],
-      ['2026-03-02', 15],
+      ['2026-03-01', 7],
+      ['2026-03-02', 12],
     ]);
+  });
+
+  it('floors the running net at zero without losing the carried income', () => {
+    const series = getCumulativeSeries({
+      periods: [
+        { periodStart: '2026-03-01', periodEnd: '2026-03-01', expense: 0, income: 10 },
+        { periodStart: '2026-03-02', periodEnd: '2026-03-02', expense: 4, income: 0 },
+        { periodStart: '2026-03-03', periodEnd: '2026-03-03', expense: 20, income: 0 },
+      ],
+    });
+    expect(series.map((p) => p.cumulative)).toEqual([0, 0, 14]);
   });
 });

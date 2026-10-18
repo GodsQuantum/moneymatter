@@ -47,6 +47,21 @@ export default class Budgets extends Model {
   @Column({ allowNull: false, defaultValue: false, type: DataType.BOOLEAN })
   archivePromptDismissed!: boolean;
 
+  @Column({ type: DataType.STRING(253), allowNull: true })
+  logoDomain!: string | null;
+
+  @Column({ type: DataType.STRING(16), allowNull: true })
+  logoInitials!: string | null;
+
+  @Column({ type: DataType.STRING(7), allowNull: true })
+  logoColor!: string | null;
+
+  @Column({ type: DataType.STRING(64), allowNull: true })
+  logoIcon!: string | null;
+
+  @Column({ type: DataType.UUID, allowNull: true })
+  logoImageId!: string | null;
+
   @MoneyField({ storage: 'cents', allowNull: true })
   declare limitAmount: Money;
 

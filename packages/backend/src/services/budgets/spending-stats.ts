@@ -1,4 +1,4 @@
-import type { BudgetSpendingGranularity, RecordId } from '@bt/shared/types';
+import type { BudgetSpendingGranularity, EntityLogoFields, RecordId } from '@bt/shared/types';
 import { BUDGET_TYPES, TRANSACTION_TRANSFER_NATURE, TRANSACTION_TYPES } from '@bt/shared/types';
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
@@ -9,6 +9,7 @@ import Payees from '@models/payees.model';
 import TransactionSplits from '@models/transaction-splits.model';
 import { PlannedPolicy, transactionsInclude } from '@models/transactions-query';
 import * as Transactions from '@models/transactions.model';
+import { EMPTY_LOGO_FIELDS, serializeLogoFields } from '@root/serializers/logo-fields.serializer';
 import { statsTransactions } from '@services/stats/stats-transactions';
 import {
   addDays,
@@ -66,12 +67,9 @@ interface SpendingByCurrencyItem {
   refAmount: number; // cents, positive
 }
 
-interface SpendingPayeeItem {
+interface SpendingPayeeItem extends EntityLogoFields {
   payeeId: RecordId | null;
   name: string | null;
-  logoDomain: string | null;
-  logoInitials: string | null;
-  logoColor: string | null;
   amount: number; // cents, positive
   transactionsCount: number;
 }
@@ -353,20 +351,21 @@ const buildTopPayees = async ({ txDataList }: { txDataList: NormalizedTxData[] }
   const payees = payeeIds.length
     ? await Payees.findAll({
         where: { id: { [Op.in]: payeeIds } },
-        attributes: ['id', 'name', 'logoDomain', 'logoInitials', 'logoColor'],
+        attributes: ['id', 'name', 'logoDomain', 'logoInitials', 'logoColor', 'logoIcon', 'logoImageId'],
       })
     : [];
   const payeeById = new Map(payees.map((payee) => [payee.id, payee]));
 
-  return top.map(([payeeId, entry]) => ({
-    payeeId,
-    name: payeeId === null ? null : (payeeById.get(payeeId)?.name ?? null),
-    logoDomain: payeeId === null ? null : (payeeById.get(payeeId)?.logoDomain ?? null),
-    logoInitials: payeeId === null ? null : (payeeById.get(payeeId)?.logoInitials ?? null),
-    logoColor: payeeId === null ? null : (payeeById.get(payeeId)?.logoColor ?? null),
-    amount: entry.amount,
-    transactionsCount: entry.transactionIds.size,
-  }));
+  return top.map(([payeeId, entry]) => {
+    const payee = payeeId === null ? undefined : payeeById.get(payeeId);
+    return {
+      payeeId,
+      name: payee?.name ?? null,
+      ...serializeLogoFields({ entity: payee ?? EMPTY_LOGO_FIELDS }),
+      amount: entry.amount,
+      transactionsCount: entry.transactionIds.size,
+    };
+  });
 };
 
 const findBiggestDay = ({ txDataList }: { txDataList: NormalizedTxData[] }): SpendingStatsResponse['biggestDay'] => {

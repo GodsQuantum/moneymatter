@@ -28,7 +28,6 @@ import {
   ListXIcon,
   MoreHorizontalIcon,
   PencilIcon,
-  TargetIcon,
   Trash2Icon,
   UsersIcon,
 } from '@lucide/vue';
@@ -36,6 +35,7 @@ import { computed, onMounted, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
+import TrackerLogo from '../components/tracker-logo.vue';
 import { useTrackerActions } from '../components/use-tracker-actions';
 import {
   type TrackerTimeStatus,
@@ -61,7 +61,7 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const { formatBaseCurrency } = useFormatCurrency();
-const { archive, unarchive, duplicate, remove } = useTrackerActions();
+const { archive, unarchive, toggleArchive, duplicate, remove } = useTrackerActions();
 
 const budgetId = computed(() => props.budget.id);
 const { isOwner, canManage, canWrite, isSharedWithCaller, ownerHandle } = useBudgetAccess(toRef(() => props.budget));
@@ -274,7 +274,6 @@ onMounted(() => {
 });
 
 const isArchivePending = computed(() => archive.isPending.value || unarchive.isPending.value);
-const toggleArchive = () => (isArchived.value ? unarchive : archive).mutate({ budgetId: budgetId.value });
 const handleDelete = () =>
   remove.mutate({ budgetId: budgetId.value, redirect: true }, { onSuccess: () => (isDeleteOpen.value = false) });
 
@@ -286,9 +285,7 @@ const chipClass = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-
     <Card class="divide-border @container/tracker divide-y overflow-clip">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-3 @md/tracker:px-4">
         <div class="flex min-w-0 items-center gap-3">
-          <div class="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg">
-            <TargetIcon class="size-4" />
-          </div>
+          <TrackerLogo :tracker="budget" class="size-9 rounded-lg" />
           <div class="min-w-0">
             <h1 class="truncate text-lg font-bold @md/tracker:text-xl">{{ budget.name }}</h1>
             <p v-if="caption" class="text-muted-foreground truncate text-xs">{{ caption }}</p>
@@ -341,7 +338,13 @@ const chipClass = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-
             </span>
           </Button>
 
-          <Button v-if="isArchived" variant="outline" size="sm" :disabled="isArchivePending" @click="toggleArchive()">
+          <Button
+            v-if="isArchived"
+            variant="outline"
+            size="sm"
+            :disabled="isArchivePending"
+            @click="toggleArchive({ budget })"
+          >
             <ArchiveRestoreIcon class="size-4" />
             {{ $t('budgets.list.unarchive') }}
           </Button>
@@ -382,7 +385,7 @@ const chipClass = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-
                 <CopyIcon class="size-4" />
                 {{ $t('budgets.details.actions.duplicate') }}
               </DropdownMenuItem>
-              <DropdownMenuItem :disabled="isArchivePending" @select="toggleArchive()">
+              <DropdownMenuItem :disabled="isArchivePending" @select="toggleArchive({ budget })">
                 <component :is="isArchived ? ArchiveRestoreIcon : ArchiveIcon" class="size-4" />
                 {{ isArchived ? $t('budgets.list.unarchive') : $t('budgets.list.archive') }}
               </DropdownMenuItem>
@@ -493,7 +496,7 @@ const chipClass = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-
 
     <ResponsiveDialog v-if="canManage" v-model:open="isShareOpen" dialog-content-class="sm:max-w-xl">
       <template #title>{{ $t('budgets.details.shareDialog.title', { name: budget.name }) }}</template>
-      <BudgetSharingPanel :budget="budget" hide-header />
+      <BudgetSharingPanel :budget="budget" />
     </ResponsiveDialog>
 
     <ResponsiveAlertDialog

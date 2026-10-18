@@ -2,6 +2,7 @@ import { BUDGET_STATUSES, BUDGET_TYPES, SHARE_PERMISSIONS, TRANSACTION_TYPES } f
 import { NONEXISTENT_ID } from '@common/lib/record-id-helpers';
 import { describe, expect, it } from '@jest/globals';
 import { ERROR_CODES } from '@js/errors';
+import { PNG_1X1_BYTES, PNG_1X1_DATA_URL } from '@tests/fixtures/logo-images';
 import * as helpers from '@tests/helpers';
 
 describe('POST /budgets/:id/duplicate', () => {
@@ -62,6 +63,47 @@ describe('POST /budgets/:id/duplicate', () => {
 
     const sourceAfter = await helpers.getCustomBudgetById({ id: source.id, raw: true });
     expect(sourceAfter!.lines!.map((line) => line.id)).toEqual([foodLine.id, funLine.id]);
+  });
+
+  it('copies the logo fields', async () => {
+    const source = await helpers.createCustomBudget({
+      name: 'Monogram',
+      logoInitials: 'TR',
+      logoColor: '#112233',
+      raw: true,
+    });
+
+    const copy = await helpers.duplicateCustomBudget({ id: source.id, raw: true });
+
+    expect(copy).toMatchObject({ logoDomain: null, logoInitials: 'TR', logoColor: '#112233' });
+  });
+
+  it('copies the logo icon', async () => {
+    const source = await helpers.createCustomBudget({
+      name: 'Icon',
+      logoIcon: 'food-24-regular',
+      logoColor: '#112233',
+      raw: true,
+    });
+
+    const copy = await helpers.duplicateCustomBudget({ id: source.id, raw: true });
+
+    expect(copy).toMatchObject({ logoIcon: 'food-24-regular', logoColor: '#112233', logoImageId: null });
+  });
+
+  it('gives the copy its own logo image blob', async () => {
+    const source = await helpers.createCustomBudget({ name: 'Image', logoImage: PNG_1X1_DATA_URL, raw: true });
+
+    const copy = await helpers.duplicateCustomBudget({ id: source.id, raw: true });
+
+    expect(copy.logoImageId).toBeTruthy();
+    expect(copy.logoImageId).not.toBe(source.logoImageId);
+    const image = await helpers.getLogoImage({ id: copy.logoImageId! });
+    expect(image.statusCode).toBe(200);
+    expect(image.body.equals(PNG_1X1_BYTES)).toBe(true);
+
+    await helpers.editCustomBudget({ id: source.id, params: { logoImage: null }, raw: true });
+    expect((await helpers.getLogoImage({ id: copy.logoImageId! })).statusCode).toBe(200);
   });
 
   it('does not copy linked transactions of a manual tracker', async () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { loadBudgetSpendingStats } from '@/api/budgets';
 import BrandLogo from '@/components/common/brand-logo.vue';
+import { toEntityLogoDisplayProps } from '@/components/common/logo-selection';
 import CurrencyLabel from '@/components/common/currency-label.vue';
 import { QUERY_CACHE_STALE_TIME, VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import { useFormatCurrency } from '@/composable';
@@ -10,6 +11,7 @@ import { useCurrenciesStore } from '@/stores';
 import type { BudgetModel, BudgetStatsResponse } from '@bt/shared/types';
 import { BarChart3Icon, TriangleAlertIcon } from '@lucide/vue';
 import { useQuery } from '@tanstack/vue-query';
+import { sumBy } from 'lodash-es';
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -50,14 +52,15 @@ const isEmpty = computed(
 
 const series = computed(() => getCumulativeSeries({ periods: data.value?.spendingOverTime.periods ?? [] }));
 // The timeline is clipped to the tracker window, so linked rows outside it only show up in the overall total.
-const expense = computed(() => props.stats?.summary.actualExpense ?? series.value.at(-1)?.cumulative ?? 0);
+const expense = computed(() => props.stats?.summary.actualExpense ?? sumBy(series.value, 'expense'));
 const spent = computed(() =>
   props.stats ? getTrackerSpent({ summary: props.stats.summary }) : (series.value.at(-1)?.cumulative ?? 0),
 );
 const baseCode = computed(() => baseCurrency.value?.currency?.code ?? '');
 const formatBaseCurrency = (amount: number) => formatCompactAmount(amount, baseCode.value);
+const COMPACT_AMOUNT_THRESHOLD = 10_000;
 const formatWholeBaseCurrency = (amount: number) =>
-  Math.abs(amount) >= 10_000 ? formatCompactAmount(amount, baseCode.value) : formatWholeBase(amount);
+  Math.abs(amount) >= COMPACT_AMOUNT_THRESHOLD ? formatCompactAmount(amount, baseCode.value) : formatWholeBase(amount);
 const limit = computed(() => props.budget.limitAmount || null);
 const progress = computed(() =>
   getPeriodProgress({ startDate: props.budget.startDate, endDate: props.budget.endDate }),
@@ -195,11 +198,15 @@ const showProjection = computed(() => !!limit.value && !!progress.value?.isActiv
 
 <template>
   <div v-if="isLoading" class="@container/stats overflow-hidden" aria-busy="true">
-    <div class="bg-border grid grid-cols-2 gap-px border-b @md/stats:grid-cols-4">
-      <div v-for="i in 4" :key="i" class="bg-card space-y-2 px-4 py-3">
+    <div class="bg-border grid grid-cols-1 gap-px border-b @md/stats:grid-cols-4">
+      <div
+        v-for="i in 4"
+        :key="i"
+        class="bg-card flex items-center justify-between gap-3 px-4 py-2.5 @md/stats:block @md/stats:space-y-2 @md/stats:py-3"
+      >
         <div class="bg-muted h-3.5 w-16 animate-pulse rounded" />
-        <div class="bg-muted h-7 w-20 animate-pulse rounded" />
-        <div class="bg-muted h-3.5 w-24 animate-pulse rounded" />
+        <div class="bg-muted h-5 w-20 animate-pulse rounded @md/stats:h-7" />
+        <div class="bg-muted hidden h-3.5 w-24 animate-pulse rounded @md/stats:block" />
       </div>
     </div>
     <div class="grid @lg/stats:grid-cols-2">
@@ -352,10 +359,8 @@ const showProjection = computed(() => !!limit.value && !!progress.value?.isActiv
           >
             <BrandLogo
               v-if="payee.name"
-              :domain="payee.logoDomain"
+              v-bind="toEntityLogoDisplayProps(payee)"
               :name="payee.name"
-              :initials="payee.logoInitials"
-              :color="payee.logoColor"
               class="size-5 rounded-full"
             />
             <span

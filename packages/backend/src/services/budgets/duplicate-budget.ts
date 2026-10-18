@@ -9,6 +9,7 @@ import TrackerLineCategories from '@models/tracker-line-categories.model';
 import TrackerLines from '@models/tracker-lines.model';
 import { getBudgetById } from '@services/budget.service';
 import { withTransaction } from '@services/common/with-transaction';
+import { copyLogoImageIfPresent } from '@services/logo-images/logo-images.service';
 
 import { authorizeBudgetAccess } from './authorize-budget-access';
 
@@ -47,6 +48,11 @@ export const duplicateBudget = withTransaction(async ({ userId, id }: { userId: 
     endDate: null,
     autoInclude: false,
     archivePromptDismissed: false,
+    logoDomain: source.logoDomain,
+    logoInitials: source.logoInitials,
+    logoColor: source.logoColor,
+    logoIcon: source.logoIcon,
+    logoImageId: await copyLogoImageIfPresent({ id: source.logoImageId }),
   });
 
   await BudgetCategories.bulkCreate(

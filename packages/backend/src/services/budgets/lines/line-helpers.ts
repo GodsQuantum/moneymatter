@@ -10,6 +10,7 @@ import TrackerLines from '@models/tracker-lines.model';
 import { includeLineCategories } from '@services/budget.service';
 import { Op } from 'sequelize';
 
+import { assertCategoriesOwnedByUser } from '../utils/assert-categories-owned-by-user';
 import { expandCategoryIds } from '../utils/expand-category-ids';
 
 export const findLineOrThrow = ({ budgetId, lineId }: { budgetId: string; lineId: string }) =>
@@ -37,11 +38,7 @@ export const replaceLineCategories = async ({
   ownerUserId: number;
   categoryIds: string[];
 }) => {
-  const uniqueIds = [...new Set(categoryIds)];
-  const ownedCount = await Categories.count({ where: { id: { [Op.in]: uniqueIds }, userId: ownerUserId } });
-  if (ownedCount !== uniqueIds.length) {
-    throw new ValidationError({ message: t({ key: 'budgets.someCategoryIdsInvalid' }) });
-  }
+  const uniqueIds = await assertCategoriesOwnedByUser({ userId: ownerUserId, categoryIds });
 
   let lineCategoryIds = await expandCategoryIds({ userId: ownerUserId, categoryIds: uniqueIds });
 

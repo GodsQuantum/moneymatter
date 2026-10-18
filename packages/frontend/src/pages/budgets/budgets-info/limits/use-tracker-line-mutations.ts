@@ -1,30 +1,25 @@
 import { createTrackerLine, deleteTrackerLine, updateTrackerLine } from '@/api/budgets';
 import { VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import { useNotificationCenter } from '@/components/notification-center';
-import { ApiErrorResponseError, extractApiErrorMessage } from '@/js/errors';
-import { captureException } from '@/lib/sentry';
 import type { BudgetModel, TrackerLinePayload } from '@bt/shared/types';
 import { useMutation, useQueryClient } from '@tanstack/vue-query';
+import { omit } from 'lodash-es';
 import { type MaybeRefOrGetter, toValue } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { useInvalidateTracker } from '../../components/use-tracker-actions';
+import { reportTrackerError, useInvalidateTracker } from '../../components/use-tracker-actions';
 
 export const useTrackerLineMutations = ({ budgetId }: { budgetId: MaybeRefOrGetter<string> }) => {
   const queryClient = useQueryClient();
   const { t } = useI18n();
-  const { addSuccessNotification, addErrorNotification } = useNotificationCenter();
+  const { addSuccessNotification } = useNotificationCenter();
   const invalidateTracker = useInvalidateTracker();
 
   const budgetKey = () => [...VUE_QUERY_CACHE_KEYS.budgetsListItem, toValue(budgetId)];
   const invalidate = () => invalidateTracker({ budgetId: toValue(budgetId) });
 
-  const onError = ({ error, fallbackKey }: { error: unknown; fallbackKey: string }) => {
-    addErrorNotification(extractApiErrorMessage(error) || t(fallbackKey));
-    if (!(error instanceof ApiErrorResponseError)) {
-      captureException({ error, context: { source: 'trackerLines' } });
-    }
-  };
+  const onError = ({ error, fallbackKey }: { error: unknown; fallbackKey: string }) =>
+    reportTrackerError({ error, fallbackKey, context: { source: 'trackerLines', budgetId: toValue(budgetId) } });
 
   const createLine = useMutation({
     mutationFn: ({ payload }: { payload: TrackerLinePayload }) =>
@@ -41,7 +36,14 @@ export const useTrackerLineMutations = ({ budgetId }: { budgetId: MaybeRefOrGett
       await queryClient.cancelQueries({ queryKey: budgetKey() });
       const previous = queryClient.getQueryData<BudgetModel>(budgetKey());
       queryClient.setQueryData<BudgetModel>(budgetKey(), (old) =>
-        old ? { ...old, lines: old.lines.map((line) => (line.id === lineId ? { ...line, ...payload } : line)) } : old,
+        old
+          ? {
+              ...old,
+              lines: old.lines.map((line) =>
+                line.id === lineId ? { ...line, ...omit(payload, 'categoryIds') } : line,
+              ),
+            }
+          : old,
       );
       return { previous };
     },

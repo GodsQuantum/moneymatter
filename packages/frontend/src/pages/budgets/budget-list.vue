@@ -13,6 +13,7 @@ import { computed, ref } from 'vue';
 
 import ArchivePromptDialog from './components/archive-prompt-dialog.vue';
 import TrackerRow from './components/tracker-row.vue';
+import { TRACKER_ROW_GRID } from './components/tracker-row-grid';
 import { TRACKER_GROUP_ORDER, type TrackerGroup, getTrackerGroup, parseTrackerDate } from './tracker-time-status';
 
 const VISIBLE_ENDED_ROWS = 3;
@@ -173,12 +174,7 @@ const chipClass = ({ active }: { active: boolean }) =>
           <div class="bg-muted/40 px-3.5 py-2.5">
             <div class="bg-muted h-2.5 w-20 animate-pulse rounded" />
           </div>
-          <div
-            v-for="row in rowCount"
-            :key="row"
-            class="grid min-h-13 animate-pulse grid-cols-[28px_minmax(0,1fr)_84px_36px] items-center gap-2 py-2.5 pr-2 pl-3 @2xl/trackers:grid-cols-[28px_minmax(0,1.6fr)_minmax(0,1fr)_130px_90px_28px] @2xl/trackers:gap-3 @2xl/trackers:px-3.5"
-            aria-hidden="true"
-          >
+          <div v-for="row in rowCount" :key="row" :class="cn(TRACKER_ROW_GRID, 'animate-pulse')" aria-hidden="true">
             <div class="bg-muted size-7 rounded-[7px]" />
             <div class="grid gap-1.5">
               <div class="bg-muted h-3 w-2/5 rounded" />

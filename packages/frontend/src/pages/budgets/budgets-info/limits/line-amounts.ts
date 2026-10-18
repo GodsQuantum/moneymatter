@@ -1,6 +1,6 @@
 import type { BudgetStatsResponse, TrackerLineModel } from '@bt/shared/types';
 
-export interface LineRow {
+interface LineRow {
   line: TrackerLineModel;
   spent: number;
   limit: number | null;
@@ -11,7 +11,7 @@ export interface LineRow {
   isOver: boolean;
 }
 
-export interface LinesTotals {
+interface LinesTotals {
   /** Sum of the lines that have a limit; null when none has one. */
   limitSum: number | null;
   /** Lines plus "Other" spending. */

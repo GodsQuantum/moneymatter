@@ -601,8 +601,13 @@
     "renameCollision": "Another payee already uses this name – merge them instead"
   },
   "brandLogos": {
-    "domainAndInitialsExclusive": "A brand logo and custom letters can't be set at the same time.",
-    "colorRequiresInitials": "A monogram color requires monogram letters."
+    "colorRequiresInitials": "A background color needs letters or an icon.",
+    "slotsExclusive": "Pick one logo type: brand, letters, icon, or image."
+  },
+  "logoImages": {
+    "invalidImage": "The file is not a PNG, JPEG, or WebP image.",
+    "tooLarge": "Logo images must be 50 KB or smaller.",
+    "notFound": "Logo image not found."
   },
   "venture": {
     "dealNotFound": "Venture deal not found",

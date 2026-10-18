@@ -5,7 +5,7 @@ import { parseTrackerDate } from '../../tracker-time-status';
 
 type DateInput = Date | string | null | undefined;
 
-export interface TrackerPeriodProgress {
+interface TrackerPeriodProgress {
   start: Date;
   end: Date;
   totalDays: number;
@@ -38,7 +38,7 @@ export const getPeriodProgress = ({
   };
 };
 
-export interface TrackerPace {
+interface TrackerPace {
   dailyPace: number | null;
   allowedPerDay: number | null;
   projectedTotal: number | null;
@@ -100,7 +100,7 @@ export const getCumulativeSeries = ({ periods }: { periods: BudgetSpendingPeriod
   return [...periods]
     .sort((a, b) => parseISO(a.periodStart).getTime() - parseISO(b.periodStart).getTime())
     .map((period) => {
-      running += period.expense;
-      return { ...period, cumulative: running };
+      running += period.expense - period.income;
+      return { ...period, cumulative: Math.max(0, running) };
     });
 };

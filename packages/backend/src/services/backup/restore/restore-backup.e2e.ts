@@ -20,6 +20,7 @@ import { VENTURE_CASH_FLOW_MODE, VENTURE_EVENT_TYPE } from '@bt/shared/types/ven
 import { generateRandomRecordId } from '@common/lib/record-id-helpers';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { RateLimitService } from '@services/common/rate-limit.service';
+import { PNG_1X1_BYTES, PNG_1X1_DATA_URL } from '@tests/fixtures/logo-images';
 import * as helpers from '@tests/helpers';
 import { VALID_ANTHROPIC_API_KEY } from '@tests/mocks/anthropic/mock-api';
 import { VALID_MONOBANK_TOKEN } from '@tests/mocks/monobank/mock-api';
@@ -1055,6 +1056,36 @@ describe('Data backup restore (POST /user/backup/restore)', () => {
   // existing row. The restore only accepts ids it inserted this run: a required
   // column drops the row, a nullable column is nulled, and the victim's data is
   // never touched.
+  describe('Tracker logo images', () => {
+    it('gives a tracker restored onto another user its own copy of the logo image', async () => {
+      const source = await helpers.createCustomBudget({ name: 'Logo tracker', logoImage: PNG_1X1_DATA_URL, raw: true });
+      expect(source.logoImageId).toBeTruthy();
+      const { base64 } = await exportArchive();
+
+      const target = await helpers.provisionSecondUserWithBaseCurrency();
+      const restoredLogoImageId = await helpers.asUser({
+        cookies: target.cookies,
+        fn: async () => {
+          const restore = await helpers.withSelfHost(() => helpers.restoreBackup({ fileContent: base64 }));
+          expect(restore.statusCode).toBe(200);
+          const status = await helpers.waitForRestore({ jobId: restore.jobId! });
+          expect(status.status).toBe('completed');
+
+          const restored = (await helpers.getCustomBudgets({ raw: true })).find((b) => b.name === 'Logo tracker');
+          expect(restored?.logoImageId).toBeTruthy();
+          expect(restored!.logoImageId).not.toBe(source.logoImageId);
+          return restored!.logoImageId!;
+        },
+      });
+
+      expect((await helpers.deleteCustomBudget({ id: source.id })).statusCode).toBe(200);
+
+      const image = await helpers.getLogoImage({ id: restoredLogoImageId });
+      expect(image.statusCode).toBe(200);
+      expect(image.body.equals(PNG_1X1_BYTES)).toBe(true);
+    });
+  });
+
   describe('Cross-user reference forgery guard', () => {
     /** Provision a second user (the would-be victim) and seed a real account,
      *  category, payee and transaction whose ids a forged backup can point at. */

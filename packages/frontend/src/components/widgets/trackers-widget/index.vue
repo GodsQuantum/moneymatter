@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/lib/ui/scroll-area';
 import { DesktopOnlyTooltip } from '@/components/lib/ui/tooltip';
 import { useFormatCurrency } from '@/composable/formatters';
 import { cn } from '@/lib/utils';
+import { getTrackerSpent } from '@/pages/budgets/budgets-info/tracker-summary';
 import UtilizationBar from '@/pages/budgets/components/utilization-bar.vue';
 import { getTrackerTimeStatus } from '@/pages/budgets/tracker-time-status';
 import { utilizationClasses } from '@/pages/budgets/utilization-classes';
@@ -151,7 +152,7 @@ const retry = () => {
               {{
                 row.utilizationRate !== null
                   ? $t('dashboard.widgets.trackers.spentOfLimit', {
-                      spent: formatBaseCurrency(Math.max(0, -row.summary.balance)),
+                      spent: formatBaseCurrency(getTrackerSpent({ summary: row.summary })),
                       limit: formatBaseCurrency(row.tracker.limitAmount ?? 0),
                     })
                   : $t('dashboard.widgets.trackers.inOut', {

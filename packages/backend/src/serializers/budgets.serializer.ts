@@ -9,14 +9,19 @@ import {
   BUDGET_TYPES,
   type BudgetSpendingByCategoryItem,
   type BudgetSpendingStatsResponse,
+  type BudgetStatsResponse,
+  type EntityLogoFields,
   ResourceShareInfo,
 } from '@bt/shared/types';
-import { Money, centsToApiDecimal, centsToApiDecimalOrNull } from '@common/types/money';
+import { centsToApiDecimal, centsToApiDecimalOrNull } from '@common/types/money';
 import type Budgets from '@models/budget.model';
 import type Categories from '@models/categories.model';
 import type TrackerLines from '@models/tracker-lines.model';
 import type { SpendingStatsResponse } from '@services/budgets/spending-stats';
+import type { StatsResponse } from '@services/budgets/stats';
 import type { BudgetShareContext } from '@services/sharing/get-shared-budgets.service';
+
+import { serializeLogoFields } from './logo-fields.serializer';
 
 // ============================================================================
 // Response Types
@@ -29,7 +34,7 @@ interface BudgetCategoryResponse {
   parentId: string | null;
 }
 
-interface BudgetApiResponse {
+interface BudgetApiResponse extends EntityLogoFields {
   id: string;
   userId: number;
   name: string;
@@ -95,6 +100,7 @@ export function serializeBudget(budget: Budgets & { _shareContext?: BudgetShareC
     autoInclude: budget.autoInclude,
     limitAmount: centsToApiDecimalOrNull(budget.limitAmount),
     archivePromptDismissed: budget.archivePromptDismissed,
+    ...serializeLogoFields({ entity: budget }),
     categories,
     lines: (budget.lines || []).map(serializeTrackerLine),
   };
@@ -125,40 +131,10 @@ export function serializeBudgets(
 // Budget Stats Serializer
 // ============================================================================
 
-interface BudgetStatsApiResponse {
-  summary: {
-    actualIncome: number;
-    actualExpense: number;
-    balance: number;
-    utilizationRate: number | null;
-    transactionsCount: number;
-    firstTransactionDate: string | null;
-    lastTransactionDate: string | null;
-  };
-  lines: { lineId: string; spent: number }[];
-  otherSpent: number;
-}
-
-interface BudgetStatsInternal {
-  summary: {
-    actualIncome: number | Money;
-    actualExpense: number | Money;
-    balance: number | Money;
-    utilizationRate: number | null;
-    transactionsCount: number;
-    firstTransactionDate: string | null;
-    lastTransactionDate: string | null;
-  };
-  /** Cents. */
-  lines: { lineId: string; spent: number }[];
-  /** Cents. */
-  otherSpent: number;
-}
-
 /**
  * Serialize budget stats to API decimal format
  */
-export function serializeBudgetStats(stats: BudgetStatsInternal): BudgetStatsApiResponse {
+export function serializeBudgetStats(stats: StatsResponse): BudgetStatsResponse {
   return {
     summary: {
       actualIncome: centsToApiDecimal(stats.summary.actualIncome),

@@ -1,18 +1,18 @@
-import { BUDGET_STATUSES, BUDGET_TYPES } from '@bt/shared/types';
+import { BUDGET_STATUSES, BUDGET_TYPES, type EntityLogoWritePayload } from '@bt/shared/types';
 import { Money } from '@common/types/money';
-import { t } from '@i18n/index';
-import { ValidationError } from '@js/errors';
 import BudgetCategories from '@models/budget-categories.model';
 import BudgetTransactions from '@models/budget-transactions.model';
 import Budgets from '@models/budget.model';
-import Categories from '@models/categories.model';
 import { findTransactions } from '@models/transactions-query';
+import { applyLogoWrite } from '@services/brand-logos';
+import { includeCategories } from '@services/budget.service';
 import { withTransaction } from '@services/common/with-transaction';
 import { Op } from 'sequelize';
 
+import { assertCategoriesOwnedByUser } from './utils/assert-categories-owned-by-user';
 import { expandCategoryIds } from './utils/expand-category-ids';
 
-interface CreateBudgetPayload {
+interface CreateBudgetPayload extends EntityLogoWritePayload {
   id?: string;
   userId: number;
   name: string;
@@ -35,41 +35,39 @@ const prepareTransactionFilters = (payload: CreateBudgetPayload) => ({
 export const createBudget = withTransaction(async (payload: CreateBudgetPayload) => {
   const budgetType = payload.type ?? BUDGET_TYPES.manual;
 
-  const budgetData: CreateBudgetPayload = {
+  const categoryIds =
+    budgetType === BUDGET_TYPES.category && payload.categoryIds?.length
+      ? await assertCategoriesOwnedByUser({ userId: payload.userId, categoryIds: payload.categoryIds })
+      : [];
+
+  const logoPatch = await applyLogoWrite({
+    write: {
+      logoDomain: payload.logoDomain,
+      logoInitials: payload.logoInitials,
+      logoColor: payload.logoColor,
+      logoIcon: payload.logoIcon,
+      logoImage: payload.logoImage,
+    },
+  });
+
+  const budget = await Budgets.create({
     name: payload.name,
     userId: payload.userId,
     status: payload.status || BUDGET_STATUSES.active,
     type: budgetType,
-    startDate: payload.startDate ?? null,
-    endDate: payload.endDate ?? null,
+    startDate: payload.startDate || null,
+    endDate: payload.endDate || null,
     autoInclude: payload.autoInclude ?? false,
     limitAmount: payload.limitAmount ?? null,
-  };
-
-  // Validate categoryIds exist before creating budget
-  if (budgetType === BUDGET_TYPES.category && payload.categoryIds?.length) {
-    const existingCategories = await Categories.findAll({
-      where: {
-        id: { [Op.in]: payload.categoryIds },
-        userId: payload.userId,
-      },
-      attributes: ['id'],
-      raw: true,
-    });
-
-    if (existingCategories.length !== payload.categoryIds.length) {
-      throw new ValidationError({ message: t({ key: 'budgets.someCategoryIdsInvalid' }) });
-    }
-  }
-
-  const budget = await createBudgetModel(budgetData);
+    ...logoPatch,
+  });
 
   // For category-based budgets, create BudgetCategories entries
-  if (budgetType === BUDGET_TYPES.category && payload.categoryIds?.length) {
+  if (categoryIds.length) {
     // Expand parent categories to include children
     const expandedCategoryIds = await expandCategoryIds({
       userId: payload.userId,
-      categoryIds: payload.categoryIds,
+      categoryIds,
     });
 
     if (expandedCategoryIds.length) {
@@ -84,7 +82,7 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
 
   // For manual budgets with autoInclude, link transactions by date range
   if (budgetType === BUDGET_TYPES.manual && payload.autoInclude && payload.startDate && payload.endDate) {
-    const transactionFilters = prepareTransactionFilters(budgetData);
+    const transactionFilters = prepareTransactionFilters(payload);
     const transactions = await findTransactions({
       planned: 'exclude',
       access: { creator: transactionFilters.userId },
@@ -112,36 +110,8 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
   // Reload budget with categories for category-based budgets
   const reloadedBudget = await Budgets.findByPk(budget.id, {
     attributes: { exclude: ['userId'] },
-    include:
-      budgetType === BUDGET_TYPES.category
-        ? [{ model: Categories, as: 'categories', attributes: ['id', 'name', 'color', 'parentId'] }]
-        : [],
+    include: budgetType === BUDGET_TYPES.category ? [includeCategories] : [],
   });
 
   return reloadedBudget!;
 });
-
-const createBudgetModel = async ({
-  name,
-  status,
-  type,
-  userId,
-  startDate,
-  endDate,
-  autoInclude,
-  limitAmount,
-}: CreateBudgetPayload) => {
-  const budgetData = {
-    name,
-    userId,
-    status: status || BUDGET_STATUSES.active,
-    type: type || BUDGET_TYPES.manual,
-    startDate: startDate || null,
-    endDate: endDate || null,
-    autoInclude: autoInclude ?? false,
-    limitAmount: limitAmount ?? null,
-  };
-
-  const budget = await Budgets.create(budgetData);
-  return budget;
-};

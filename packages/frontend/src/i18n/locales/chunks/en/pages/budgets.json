@@ -197,8 +197,7 @@
       "edit": {
         "limitHint": "Clear it to track without a limit.",
         "datesHint": "Changing the dates does not add or remove transactions already linked.",
-        "categoriesHint": "Removing a category also removes it from any line.",
-        "clearDate": "Clear date"
+        "categoriesHint": "Removing a category also removes it from any line."
       }
     },
     "lines": {

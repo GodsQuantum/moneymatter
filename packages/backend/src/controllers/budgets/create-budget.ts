@@ -1,5 +1,6 @@
 import { BUDGET_STATUSES, BUDGET_TYPES } from '@bt/shared/types';
 import { dateBound, decimalMoney, recordArrayIds, withDateOrder } from '@common/lib/zod/custom-types';
+import { logoFieldsShape, logoImageSchema, refineLogoFieldsOnCreate } from '@controllers/common/logo-fields.schema';
 import { createController } from '@controllers/helpers/controller-factory';
 import { serializeBudget } from '@root/serializers';
 import * as budgetsService from '@root/services/budgets/create-budget';
@@ -19,7 +20,10 @@ const schema = z.object({
           .refine((m) => m.isPositive(), { message: 'Limit amount must be positive' })
           .nullable()
           .optional(),
+        ...logoFieldsShape,
+        logoImage: logoImageSchema,
       })
+      .superRefine((data, ctx) => refineLogoFieldsOnCreate({ data, ctx }))
       .refine((data) => data.type !== BUDGET_TYPES.category || (data.categoryIds && data.categoryIds.length > 0), {
         message: 'Category budgets require at least one category',
         path: ['categoryIds'],
@@ -30,7 +34,20 @@ const schema = z.object({
 
 export default createController(schema, async ({ user, body }) => {
   const { id: userId } = user;
-  const { name, type, categoryIds, startDate, endDate, autoInclude, limitAmount } = body;
+  const {
+    name,
+    type,
+    categoryIds,
+    startDate,
+    endDate,
+    autoInclude,
+    limitAmount,
+    logoDomain,
+    logoInitials,
+    logoColor,
+    logoIcon,
+    logoImage,
+  } = body;
 
   const budget = await budgetsService.createBudget({
     name,
@@ -42,6 +59,11 @@ export default createController(schema, async ({ user, body }) => {
     endDate: endDate ? new Date(endDate) : undefined,
     autoInclude,
     limitAmount,
+    logoDomain,
+    logoInitials,
+    logoColor,
+    logoIcon,
+    logoImage,
   });
 
   // Serialize: convert cents to decimal for API response

@@ -1,5 +1,7 @@
 import { DataTypes, QueryInterface } from 'sequelize';
 
+const LOGO_TABLES = ['Budgets', 'Accounts', 'AccountGroups', 'Payees', 'Subscriptions'];
+
 module.exports = {
   up: async (queryInterface: QueryInterface): Promise<void> => {
     await queryInterface.sequelize.transaction(async (transaction) => {
@@ -9,6 +11,40 @@ module.exports = {
         { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
         { transaction },
       );
+
+      await queryInterface.addColumn(
+        'Budgets',
+        'logoDomain',
+        { type: DataTypes.STRING(253), allowNull: true },
+        { transaction },
+      );
+      await queryInterface.addColumn(
+        'Budgets',
+        'logoInitials',
+        { type: DataTypes.STRING(16), allowNull: true },
+        { transaction },
+      );
+      await queryInterface.addColumn(
+        'Budgets',
+        'logoColor',
+        { type: DataTypes.STRING(7), allowNull: true },
+        { transaction },
+      );
+
+      for (const table of LOGO_TABLES) {
+        await queryInterface.addColumn(
+          table,
+          'logoIcon',
+          { type: DataTypes.STRING(64), allowNull: true },
+          { transaction },
+        );
+        await queryInterface.addColumn(
+          table,
+          'logoImageId',
+          { type: DataTypes.UUID, allowNull: true },
+          { transaction },
+        );
+      }
 
       await queryInterface.createTable(
         'TrackerLines',
@@ -86,6 +122,13 @@ module.exports = {
     await queryInterface.sequelize.transaction(async (transaction) => {
       await queryInterface.dropTable('TrackerLineCategories', { transaction });
       await queryInterface.dropTable('TrackerLines', { transaction });
+      for (const table of LOGO_TABLES.toReversed()) {
+        await queryInterface.removeColumn(table, 'logoImageId', { transaction });
+        await queryInterface.removeColumn(table, 'logoIcon', { transaction });
+      }
+      await queryInterface.removeColumn('Budgets', 'logoColor', { transaction });
+      await queryInterface.removeColumn('Budgets', 'logoInitials', { transaction });
+      await queryInterface.removeColumn('Budgets', 'logoDomain', { transaction });
       await queryInterface.removeColumn('Budgets', 'archivePromptDismissed', { transaction });
     });
   },

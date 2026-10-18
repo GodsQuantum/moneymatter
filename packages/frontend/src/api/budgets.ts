@@ -1,13 +1,15 @@
 import { api } from '@/api/_api';
 import {
+  type BUDGET_TYPES,
   BudgetModel,
   type BudgetSpendingStatsResponse,
   type BudgetStatsResponse,
+  type EntityLogoWritePayload,
   type TrackerLineModel,
   type TrackerLinePayload,
 } from '@bt/shared/types';
 
-export interface EditBudgetPayload {
+export interface EditBudgetPayload extends EntityLogoWritePayload {
   name?: string;
   limitAmount?: number | null;
   categoryIds?: string[];
@@ -24,9 +26,17 @@ export const loadBudgetById = async (id: string): Promise<BudgetModel> => {
   return api.get(`/budgets/${id}`);
 };
 
-export const createBudget = async (
-  payload: Omit<BudgetModel, 'id' | 'userId' | 'lines' | 'archivePromptDismissed'>,
-): Promise<BudgetModel> => {
+interface CreateBudgetPayload extends EntityLogoWritePayload {
+  name: string;
+  type?: BUDGET_TYPES;
+  categoryIds?: string[];
+  startDate?: Date | null;
+  endDate?: Date | null;
+  limitAmount?: number | null;
+  autoInclude?: boolean;
+}
+
+export const createBudget = async (payload: CreateBudgetPayload): Promise<BudgetModel> => {
   const params = {
     ...payload,
     limitAmount: payload.limitAmount && payload.limitAmount > 0 ? payload.limitAmount : null,
@@ -82,7 +92,7 @@ export const loadBudgetStats = async ({ budgetId }: { budgetId: string }): Promi
   return api.get(`/budgets/${budgetId}/stats`);
 };
 
-export interface CategoryBudgetTransaction {
+interface CategoryBudgetTransaction {
   id: string;
   time: string;
   transactionType: 'income' | 'expense';

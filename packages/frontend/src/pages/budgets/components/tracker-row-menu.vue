@@ -21,7 +21,7 @@ const props = defineProps<{ budget: BudgetModel }>();
 
 const router = useRouter();
 const { isOwner, canManage } = useBudgetAccess(() => props.budget);
-const { archive, unarchive, duplicate, remove } = useTrackerActions();
+const { toggleArchive, duplicate, remove } = useTrackerActions();
 
 const isDeleteOpen = ref(false);
 const isArchived = computed(() => props.budget.status === BUDGET_STATUSES.archived);
@@ -29,8 +29,6 @@ const isArchived = computed(() => props.budget.status === BUDGET_STATUSES.archiv
 const openDetails = () => {
   router.push({ name: ROUTES_NAMES.plannedBudgetDetails, params: { id: props.budget.id } });
 };
-
-const toggleArchive = () => (isArchived.value ? unarchive : archive).mutate({ budgetId: props.budget.id });
 
 const handleDelete = () =>
   remove.mutate({ budgetId: props.budget.id }, { onSuccess: () => (isDeleteOpen.value = false) });
@@ -63,7 +61,7 @@ const handleDelete = () =>
           <CopyIcon class="size-4" />
           {{ $t('budgets.list.menu.duplicate') }}
         </DropdownMenuItem>
-        <DropdownMenuItem v-if="canManage" @select="toggleArchive">
+        <DropdownMenuItem v-if="canManage" @select="toggleArchive({ budget })">
           <component :is="isArchived ? ArchiveRestoreIcon : ArchiveIcon" class="size-4" />
           {{ isArchived ? $t('budgets.list.unarchive') : $t('budgets.list.archive') }}
         </DropdownMenuItem>

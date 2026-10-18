@@ -1,4 +1,4 @@
-import { BUDGET_TYPES, SHARE_PERMISSIONS } from '@bt/shared/types';
+import { BUDGET_TYPES, type EntityLogoWritePayload, SHARE_PERMISSIONS } from '@bt/shared/types';
 import { Money } from '@common/types/money';
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
@@ -6,17 +6,18 @@ import { ValidationError } from '@js/errors';
 import { removeUndefinedKeys } from '@js/helpers';
 import BudgetCategories from '@models/budget-categories.model';
 import Budgets from '@models/budget.model';
-import Categories from '@models/categories.model';
 import TrackerLineCategories from '@models/tracker-line-categories.model';
 import TrackerLines from '@models/tracker-lines.model';
-import { includeLines } from '@services/budget.service';
+import { applyLogoWrite } from '@services/brand-logos';
+import { includeCategories, includeLines } from '@services/budget.service';
 import { withTransaction } from '@services/common/with-transaction';
 import { Op } from 'sequelize';
 
 import { authorizeBudgetAccess } from './authorize-budget-access';
+import { assertCategoriesOwnedByUser } from './utils/assert-categories-owned-by-user';
 import { expandCategoryIds } from './utils/expand-category-ids';
 
-interface EditBudgetPayload {
+interface EditBudgetPayload extends EntityLogoWritePayload {
   id: string;
   userId: number;
   name?: string;
@@ -78,18 +79,24 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
     throw new ValidationError({ message: t({ key: 'budgets.startDateAfterEndDate' }) });
   }
 
-  await budget.update(removeUndefinedKeys(params));
-
-  if (categoryIds !== undefined && budget.type === BUDGET_TYPES.category) {
+  const replaceCategories = categoryIds !== undefined && budget.type === BUDGET_TYPES.category;
+  let expandedCategoryIds: string[] = [];
+  if (replaceCategories) {
     // Categories are resolved against the OWNER's tree, so a `manage` recipient cannot
     // inject categories from their own tree.
-    const uniqueIds = [...new Set(categoryIds)];
-    const ownedCount = await Categories.count({ where: { id: { [Op.in]: uniqueIds }, userId: ownerUserId } });
-    if (ownedCount !== uniqueIds.length) {
-      throw new ValidationError({ message: t({ key: 'budgets.someCategoryIdsInvalid' }) });
-    }
-    const expandedCategoryIds = await expandCategoryIds({ userId: ownerUserId, categoryIds: uniqueIds });
+    const uniqueIds = await assertCategoriesOwnedByUser({ userId: ownerUserId, categoryIds });
+    expandedCategoryIds = await expandCategoryIds({ userId: ownerUserId, categoryIds: uniqueIds });
+  }
 
+  const { logoDomain, logoInitials, logoColor, logoIcon, logoImage, ...fields } = params;
+  const logoPatch = await applyLogoWrite({
+    write: { logoDomain, logoInitials, logoColor, logoIcon, logoImage },
+    stored: budget,
+  });
+
+  await budget.update({ ...removeUndefinedKeys(fields), ...logoPatch });
+
+  if (replaceCategories) {
     await BudgetCategories.destroy({ where: { budgetId: id } });
     await BudgetCategories.bulkCreate(expandedCategoryIds.map((categoryId) => ({ budgetId: id, categoryId })));
 
@@ -99,10 +106,7 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
   const updatedBudget = await Budgets.findOne({
     where: { id, userId: ownerUserId },
     attributes: { exclude: ['userId'] },
-    include:
-      budget.type === BUDGET_TYPES.category
-        ? [{ model: Categories, as: 'categories', attributes: ['id', 'name', 'color', 'parentId'] }, includeLines]
-        : [includeLines],
+    include: budget.type === BUDGET_TYPES.category ? [includeCategories, includeLines] : [includeLines],
   });
 
   return updatedBudget;

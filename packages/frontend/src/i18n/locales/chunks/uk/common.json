@@ -218,7 +218,9 @@
     "logo": {
       "tabs": {
         "brand": "Бренд",
-        "letters": "Літери"
+        "letters": "Літери",
+        "icon": "Іконка",
+        "custom": "Зображення"
       },
       "searchPlaceholder": "Назва бренду або домен",
       "searchHint": "Введіть назву бренду або домен, як-от amazon.com",
@@ -238,8 +240,17 @@
       "colorLabel": "Колір",
       "colorSwatchAriaLabel": "Використати колір {color}",
       "customColorAriaLabel": "Вибрати власний колір",
-      "applyLetters": "Застосувати",
-      "lettersSelectedLabel": "Літери «{letters}»"
+      "lettersSelectedLabel": "Літери «{letters}»",
+      "lettersHint": "1–2 літери або емодзі",
+      "chooseImage": "Вибрати зображення",
+      "replaceImage": "Замінити зображення",
+      "imageHint": "Обрізається до квадрата й стискається до 200×200 на вашому пристрої.",
+      "imageTooLarge": "Після стиснення зображення все ще перевищує 50 КБ. Спробуйте простіше зображення.",
+      "imageUnreadable": "Не вдалося прочитати цей файл як зображення."
+    },
+    "iconPicker": {
+      "searchPlaceholder": "Пошук іконок...",
+      "clear": "Очистити іконку"
     },
     "importBatchDeleteOverlay": {
       "title": "Видалення імпортованих транзакцій",

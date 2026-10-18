@@ -21,7 +21,7 @@ type BudgetWithShareContext = BudgetWithCategories & { _shareContext?: BudgetSha
 
 const categoryAttributes = ['id', 'name', 'color', 'parentId'];
 
-const includeCategories = {
+export const includeCategories = {
   model: Categories,
   as: 'categories',
   attributes: categoryAttributes,

@@ -33,11 +33,11 @@ const {
 const isNotFound = computed(() => isError.value && isNotFoundError(error.value));
 
 watch(
-  isError,
-  (errored) => {
-    if (!errored || isNotFound.value || budgetItem.value) return;
+  error,
+  (latestError) => {
+    if (!latestError || isNotFound.value) return;
     addErrorNotification(t('errors.api.unexpectedError'));
-    router.replace({ name: ROUTES_NAMES.plannedBudgets });
+    if (!budgetItem.value) router.replace({ name: ROUTES_NAMES.plannedBudgets });
   },
   { immediate: true },
 );

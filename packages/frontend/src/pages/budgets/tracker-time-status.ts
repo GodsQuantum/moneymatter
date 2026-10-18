@@ -1,7 +1,7 @@
 import { BUDGET_STATUSES, type BudgetModel } from '@bt/shared/types';
 import { differenceInCalendarDays, endOfDay, format, isAfter, isSameYear, parseISO } from 'date-fns';
 
-export const ARCHIVE_PROMPT_AFTER_DAYS = 30;
+const ARCHIVE_PROMPT_AFTER_DAYS = 30;
 
 type DateInput = Date | string | null | undefined;
 
@@ -64,7 +64,7 @@ export const shouldSuggestArchive = ({
   return status.kind === 'ended' && status.daysSinceEnd >= ARCHIVE_PROMPT_AFTER_DAYS;
 };
 
-export interface TrackerStatusLabel {
+interface TrackerStatusLabel {
   key: string;
   params?: Record<string, number>;
 }

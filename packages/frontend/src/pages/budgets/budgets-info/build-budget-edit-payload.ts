@@ -1,4 +1,5 @@
 import type { EditBudgetPayload } from '@/api/budgets';
+import { endOfDay, startOfDay } from 'date-fns';
 
 interface BudgetEditFormValues {
   name: string;
@@ -9,7 +10,7 @@ interface BudgetEditFormValues {
   categoryIds?: string[];
 }
 
-export type BudgetEditPayload = Required<Pick<EditBudgetPayload, 'name' | 'limitAmount' | 'startDate' | 'endDate'>> &
+type BudgetEditPayload = Required<Pick<EditBudgetPayload, 'name' | 'limitAmount' | 'startDate' | 'endDate'>> &
   Pick<EditBudgetPayload, 'categoryIds'>;
 
 /** Anything but a positive finite number clears the limit (`null`). */
@@ -25,8 +26,8 @@ export const buildBudgetEditPayload = ({
   return {
     name,
     limitAmount: Number.isFinite(limit) && limit > 0 ? limit : null,
-    startDate: startDate ? startDate.toISOString() : null,
-    endDate: endDate ? endDate.toISOString() : null,
+    startDate: startDate ? startOfDay(startDate).toISOString() : null,
+    endDate: endDate ? endOfDay(endDate).toISOString() : null,
     ...(categoryIds ? { categoryIds } : {}),
   };
 };

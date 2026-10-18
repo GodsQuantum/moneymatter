@@ -1,4 +1,5 @@
 import type { EmbeddedCategoryModel } from './categories';
+import type { EntityLogoFields } from './entity-logo';
 import type { RecordId } from './record-id';
 import type { ResourceShareInfo } from './sharing';
 
@@ -34,7 +35,7 @@ export interface TrackerLinePayload {
   position?: number;
 }
 
-export interface BudgetModel {
+export interface BudgetModel extends EntityLogoFields {
   id: RecordId;
   userId: number;
   status: string;
@@ -66,7 +67,7 @@ export interface BudgetModel {
 
 export interface BudgetStatsLine {
   lineId: RecordId;
-  /** Decimal, positive. Net expenses matched to this line. */
+  /** Decimal, positive. Gross expenses matched to this line, refunds not netted. */
   spent: number;
 }
 
@@ -114,12 +115,9 @@ export interface BudgetSpendingByCurrencyItem {
   refAmount: number;
 }
 
-export interface BudgetSpendingPayeeItem {
+export interface BudgetSpendingPayeeItem extends EntityLogoFields {
   payeeId: RecordId | null;
   name: string | null;
-  logoDomain: string | null;
-  logoInitials: string | null;
-  logoColor: string | null;
   /** Decimal, positive, base currency. */
   amount: number;
   transactionsCount: number;

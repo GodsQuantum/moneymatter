@@ -939,7 +939,7 @@ describe('Get budget spending stats', () => {
 
       const result = await helpers.getSpendingStats({ id: budget.id, raw: true });
 
-      const noLogo = { logoDomain: null, logoInitials: null, logoColor: null };
+      const noLogo = { logoDomain: null, logoInitials: null, logoColor: null, logoIcon: null, logoImageId: null };
       expect(result.topPayees).toEqual([
         { payeeId: payees[0]!.id, name: 'stats-P1', amount: 600, transactionsCount: 2, ...noLogo },
         { payeeId: payees[1]!.id, name: 'stats-P2', amount: 500, transactionsCount: 1, ...noLogo },

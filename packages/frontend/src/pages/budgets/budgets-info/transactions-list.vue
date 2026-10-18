@@ -2,9 +2,7 @@
 import { loadCategoryBudgetTransactions, removeTransactionsFromBudget } from '@/api/budgets';
 import { VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import { Button } from '@/components/lib/ui/button';
-import { Checkbox } from '@/components/lib/ui/checkbox';
 import { SCROLL_AREA_IDS } from '@/components/lib/ui/scroll-area/types';
-import { DesktopOnlyTooltip } from '@/components/lib/ui/tooltip';
 import { useNotificationCenter } from '@/components/notification-center';
 import RecordsFiltersDialog from '@/components/records-filters/filters-dialog.vue';
 import RecordsFilters from '@/components/records-filters/index.vue';
@@ -19,11 +17,10 @@ import { useScrollAreaContainer } from '@/composable/scroll-area-container';
 import { useShiftMultiSelect } from '@/composable/shift-multi-select';
 import { useVirtualizedInfiniteScroll } from '@/composable/virtualized-infinite-scroll';
 import { CUSTOM_BREAKPOINTS, useWindowBreakpoints } from '@/composable/window-breakpoints';
-import { extractApiErrorMessage } from '@/js/errors';
 import { cn } from '@/lib/utils';
 import { ROUTES_NAMES } from '@/routes/constants';
 import { BUDGET_TYPES, type BudgetModel } from '@bt/shared/types';
-import { LayersIcon, Loader2Icon, PlusIcon, TableIcon, TargetIcon, UnlinkIcon, XIcon } from '@lucide/vue';
+import { LayersIcon, Loader2Icon, PlusIcon, TableIcon, TargetIcon } from '@lucide/vue';
 import { useInfiniteQuery, useMutation } from '@tanstack/vue-query';
 import { useIntersectionObserver } from '@vueuse/core';
 import { format, parseISO } from 'date-fns';
@@ -31,8 +28,9 @@ import { computed, defineAsyncComponent, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
-import { useInvalidateTracker } from '../components/use-tracker-actions';
+import { reportTrackerError, useInvalidateTracker } from '../components/use-tracker-actions';
 import AddTransactionsDialog from './add-transactions-dialog.vue';
+import SelectionActions from './selection-actions.vue';
 
 const ManageTransactionDialogContent = defineAsyncComponent(
   () => import('@/components/dialogs/manage-transaction/dialog-content.vue'),
@@ -47,7 +45,7 @@ const CATEGORY_PAGE_SIZE = 50;
 
 const { t } = useI18n();
 const invalidateTracker = useInvalidateTracker();
-const { addSuccessNotification, addErrorNotification } = useNotificationCenter();
+const { addSuccessNotification } = useNotificationCenter();
 const { formatBaseCurrency } = useFormatCurrency();
 const isMobile = useWindowBreakpoints(CUSTOM_BREAKPOINTS.uiMobile);
 
@@ -154,10 +152,15 @@ const { isPending: isUnlinking, mutate: unlinkTransactions } = useMutation({
     resetSelection();
     return invalidateTracker({ budgetId: budgetId.value });
   },
-  onError: (error) => {
-    addErrorNotification(extractApiErrorMessage(error) || t('pages.budgets.transactionsList.unlinkError'));
-  },
+  onError: (error) =>
+    reportTrackerError({
+      error,
+      fallbackKey: 'pages.budgets.transactionsList.unlinkError',
+      context: { source: 'trackerUnlinkTransactions', budgetId: budgetId.value },
+    }),
 });
+
+const isSelecting = computed(() => props.canWrite && pickedTransactionsIds.size > 0);
 
 const handleUnlink = () =>
   unlinkTransactions({
@@ -200,33 +203,58 @@ const formatTransactionDate = (date: string) => format(parseISO(date), 'MMM d, y
 <template>
   <div class="@container/tracker-tx">
     <template v-if="isManual">
-      <div class="flex items-center justify-between gap-2 border-b px-3 py-2 @md/tracker-tx:px-4">
-        <div class="flex items-center gap-2">
-          <RecordsFiltersDialog v-model:open="isFiltersDialogOpen" size="sm" :isAnyFiltersApplied="isAnyFiltersApplied">
-            <div class="relative max-h-[calc(100vh-var(--header-height)-32px)] overflow-auto">
-              <RecordsFilters
-                v-model:filters="filters"
-                hide-budgets
-                :is-reset-button-disabled="isResetButtonDisabled"
-                :is-filters-out-of-sync="isFiltersOutOfSync"
-                @reset-filters="resetFilters"
-                @apply-filters="applyFilters"
-              />
-            </div>
-          </RecordsFiltersDialog>
-          <Button variant="outline" size="sm" @click="openInTransactions">
-            <TableIcon class="size-4" />
-            <span class="hidden @sm/tracker-tx:inline">{{ $t('budgets.details.actions.openInTransactions') }}</span>
-          </Button>
+      <div
+        :class="
+          cn(
+            'flex items-center justify-between gap-2 border-b px-3 py-2 @md/tracker-tx:px-4',
+            !isMobile && 'bg-card/95 sticky top-[calc(var(--header-height)+2.25rem)] z-(--z-navbar) backdrop-blur',
+          )
+        "
+      >
+        <div v-if="!isMobile && isSelecting" class="flex flex-1 items-center gap-3">
+          <SelectionActions
+            :count="pickedTransactionsIds.size"
+            :is-all-selected="isAllSelected"
+            :is-unlinking="isUnlinking"
+            @toggle-all="toggleSelectAll"
+            @unlink="handleUnlink"
+            @cancel="resetSelection"
+          />
         </div>
+        <template v-else>
+          <div class="flex items-center gap-2">
+            <RecordsFiltersDialog
+              v-model:open="isFiltersDialogOpen"
+              size="sm"
+              :isAnyFiltersApplied="isAnyFiltersApplied"
+            >
+              <div class="relative max-h-[calc(100vh-var(--header-height)-32px)] overflow-auto">
+                <RecordsFilters
+                  v-model:filters="filters"
+                  hide-budgets
+                  :is-reset-button-disabled="isResetButtonDisabled"
+                  :is-filters-out-of-sync="isFiltersOutOfSync"
+                  @reset-filters="resetFilters"
+                  @apply-filters="applyFilters"
+                />
+              </div>
+            </RecordsFiltersDialog>
+            <Button variant="outline" size="sm" @click="openInTransactions">
+              <TableIcon class="size-4" />
+              <span class="hidden @lg/tracker-tx:inline">{{ $t('budgets.details.actions.openInTransactions') }}</span>
+            </Button>
+          </div>
 
-        <AddTransactionsDialog v-if="canWrite">
-          <Button size="sm">
-            <PlusIcon class="size-4" />
-            <span class="hidden @sm/tracker-tx:inline">{{ $t('pages.budgets.transactionsList.addTransactions') }}</span>
-            <span class="@sm/tracker-tx:hidden">{{ $t('pages.budgets.transactionsList.add') }}</span>
-          </Button>
-        </AddTransactionsDialog>
+          <AddTransactionsDialog v-if="canWrite">
+            <Button size="sm">
+              <PlusIcon class="size-4" />
+              <span class="hidden @lg/tracker-tx:inline">{{
+                $t('pages.budgets.transactionsList.addTransactions')
+              }}</span>
+              <span class="@lg/tracker-tx:hidden">{{ $t('pages.budgets.transactionsList.add') }}</span>
+            </Button>
+          </AddTransactionsDialog>
+        </template>
       </div>
 
       <div class="p-2 @md/tracker-tx:p-3">
@@ -307,32 +335,17 @@ const formatTransactionDate = (date: string) => format(parseISO(date), 'MMM d, y
       </div>
 
       <div
-        v-if="canWrite && pickedTransactionsIds.size > 0"
+        v-if="isMobile && isSelecting"
         class="bg-popover/95 sticky bottom-3 z-10 mx-3 mb-3 flex items-center gap-3 rounded-lg border px-3 py-2 shadow-lg backdrop-blur"
       >
-        <Checkbox
-          :model-value="isAllSelected ? true : 'indeterminate'"
-          :aria-label="$t('pages.budgets.transactionsList.selectAll')"
-          @update:model-value="toggleSelectAll"
+        <SelectionActions
+          :count="pickedTransactionsIds.size"
+          :is-all-selected="isAllSelected"
+          :is-unlinking="isUnlinking"
+          @toggle-all="toggleSelectAll"
+          @unlink="handleUnlink"
+          @cancel="resetSelection"
         />
-        <span class="text-sm font-medium tabular-nums">
-          {{ $t('pages.budgets.transactionsList.selected', { count: pickedTransactionsIds.size }) }}
-        </span>
-        <Button variant="soft-destructive" size="sm" class="ml-auto" :disabled="isUnlinking" @click="handleUnlink">
-          <UnlinkIcon class="size-4" />
-          {{ $t('pages.budgets.transactionsList.unlink') }}
-        </Button>
-        <DesktopOnlyTooltip :content="$t('pages.budgets.transactionsList.cancel')">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            :disabled="isUnlinking"
-            :aria-label="$t('pages.budgets.transactionsList.cancel')"
-            @click="resetSelection"
-          >
-            <XIcon class="size-4" />
-          </Button>
-        </DesktopOnlyTooltip>
       </div>
 
       <TransactionDetailsModal v-model:open="isDialogVisible" :mobile="isMobile" :is-compact="isCompactDialog">

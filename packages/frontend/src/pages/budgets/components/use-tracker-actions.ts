@@ -1,9 +1,11 @@
 import { archiveBudget, deleteBudget, duplicateBudget, editBudget } from '@/api/budgets';
 import { VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import { useNotificationCenter } from '@/components/notification-center';
-import { ApiErrorResponseError, extractApiErrorMessage } from '@/js/errors';
+import { notifyMutationError } from '@/composable/data-queries/use-invalidating-mutation';
+import { ApiErrorResponseError } from '@/js/errors';
 import { captureException } from '@/lib/sentry';
 import { ROUTES_NAMES } from '@/routes/constants';
+import { BUDGET_STATUSES, type BudgetModel } from '@bt/shared/types';
 import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -19,27 +21,25 @@ export const useInvalidateTracker = () => {
     ]);
 };
 
+export const reportTrackerError = ({
+  error,
+  fallbackKey,
+  context,
+}: {
+  error: unknown;
+  fallbackKey: string;
+  context: Record<string, unknown>;
+}) => {
+  notifyMutationError({ error, fallbackKey });
+  if (!(error instanceof ApiErrorResponseError)) captureException({ error, context });
+};
+
 export const useTrackerActions = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { t } = useI18n();
-  const { addSuccessNotification, addErrorNotification } = useNotificationCenter();
+  const { addSuccessNotification } = useNotificationCenter();
   const invalidateTracker = useInvalidateTracker();
-
-  const reportError = ({
-    error,
-    fallbackKey,
-    source,
-    budgetId,
-  }: {
-    error: unknown;
-    fallbackKey: string;
-    source: string;
-    budgetId: string;
-  }) => {
-    addErrorNotification(extractApiErrorMessage(error) || t(fallbackKey));
-    if (!(error instanceof ApiErrorResponseError)) captureException({ error, context: { source, budgetId } });
-  };
 
   const archive = useMutation({
     mutationFn: ({ budgetId }: { budgetId: string }) => archiveBudget({ budgetId, isArchived: true }),
@@ -48,7 +48,11 @@ export const useTrackerActions = () => {
       return invalidateTracker({ budgetId });
     },
     onError: (error, { budgetId }) =>
-      reportError({ error, fallbackKey: 'budgets.list.archiveError', source: 'trackerArchive', budgetId }),
+      reportTrackerError({
+        error,
+        fallbackKey: 'budgets.list.archiveError',
+        context: { source: 'trackerArchive', budgetId },
+      }),
   });
 
   const unarchive = useMutation({
@@ -58,7 +62,11 @@ export const useTrackerActions = () => {
       return invalidateTracker({ budgetId });
     },
     onError: (error, { budgetId }) =>
-      reportError({ error, fallbackKey: 'budgets.list.archiveError', source: 'trackerUnarchive', budgetId }),
+      reportTrackerError({
+        error,
+        fallbackKey: 'budgets.list.archiveError',
+        context: { source: 'trackerUnarchive', budgetId },
+      }),
   });
 
   const duplicate = useMutation({
@@ -69,7 +77,11 @@ export const useTrackerActions = () => {
       return invalidateTracker({ budgetId: copy.id });
     },
     onError: (error, { budgetId }) =>
-      reportError({ error, fallbackKey: 'budgets.list.duplicateError', source: 'trackerDuplicate', budgetId }),
+      reportTrackerError({
+        error,
+        fallbackKey: 'budgets.list.duplicateError',
+        context: { source: 'trackerDuplicate', budgetId },
+      }),
   });
 
   const remove = useMutation({
@@ -86,7 +98,11 @@ export const useTrackerActions = () => {
       queryClient.removeQueries({ predicate: (query) => query.queryKey.includes(budgetId) });
     },
     onError: (error, { budgetId }) =>
-      reportError({ error, fallbackKey: 'budgets.list.deleteError', source: 'trackerDelete', budgetId }),
+      reportTrackerError({
+        error,
+        fallbackKey: 'budgets.list.deleteError',
+        context: { source: 'trackerDelete', budgetId },
+      }),
   });
 
   const dismissArchivePrompt = useMutation({
@@ -97,13 +113,15 @@ export const useTrackerActions = () => {
       return invalidateTracker({ budgetId });
     },
     onError: (error, { budgetId }) =>
-      reportError({
+      reportTrackerError({
         error,
         fallbackKey: 'budgets.list.archivePrompt.dismissError',
-        source: 'trackerDismissArchivePrompt',
-        budgetId,
+        context: { source: 'trackerDismissArchivePrompt', budgetId },
       }),
   });
 
-  return { invalidateTracker, archive, unarchive, duplicate, remove, dismissArchivePrompt };
+  const toggleArchive = ({ budget }: { budget: BudgetModel }) =>
+    (budget.status === BUDGET_STATUSES.archived ? unarchive : archive).mutate({ budgetId: budget.id });
+
+  return { invalidateTracker, archive, unarchive, toggleArchive, duplicate, remove, dismissArchivePrompt };
 };

@@ -1,6 +1,7 @@
 import {
   BUDGET_TYPES,
   BudgetModel,
+  type EntityLogoWritePayload,
   RESOURCE_TYPES,
   type SharePermission,
   type BudgetSpendingStatsResponse,
@@ -14,10 +15,11 @@ import * as createBudgetService from '@root/services/budgets/create-budget';
 import type { getBudgetStats } from '@root/services/budgets/stats';
 import { Response } from 'express';
 
+import { downloadBinary } from './attachments';
 import { makeRequest } from './common';
 import { type SecondUserHandle, acceptShareInvitation, asUser, createShareInvitation } from './share';
 
-interface TestCreateBudgetPayload {
+interface TestCreateBudgetPayload extends EntityLogoWritePayload {
   id?: string;
   name: string;
   status?: string;
@@ -29,7 +31,7 @@ interface TestCreateBudgetPayload {
   limitAmount?: number | null;
 }
 
-interface EditBudgetPayload {
+interface EditBudgetPayload extends EntityLogoWritePayload {
   name?: string;
   categoryIds?: string[];
   startDate?: string | null;
@@ -334,4 +336,14 @@ export async function shareBudgetWith({
     raw: true,
   });
   await asUser({ cookies: recipient.cookies, fn: () => acceptShareInvitation({ token: invitation.token, raw: true }) });
+}
+
+export async function getLogoImage({ id }: { id: string }) {
+  const { statusCode, body, header } = await downloadBinary({ url: `/logo-images/${id}` });
+  return {
+    statusCode,
+    body,
+    contentType: header({ name: 'content-type' }),
+    cacheControl: header({ name: 'cache-control' }),
+  };
 }

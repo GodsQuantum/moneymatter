@@ -19,7 +19,6 @@ import { useNotificationCenter } from '@/components/notification-center';
 import { useBudgetAccess } from '@/composable/use-budget-access';
 import { useCopyInviteLink } from '@/composable/use-copy-invite-link';
 import { ApiErrorResponseError } from '@/js/errors';
-import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores';
 import {
   type BudgetModel,
@@ -45,7 +44,6 @@ import { useI18n } from 'vue-i18n';
 
 const props = defineProps<{
   budget: BudgetModel;
-  hideHeader?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -194,15 +192,7 @@ const isSelfRow = (member: ShareMemberRow) => user.value?.id === member.user.id;
 
 <template>
   <div class="@container/sharing-panel grid gap-6">
-    <div
-      v-if="!hideHeader || isOwner"
-      :class="cn('flex items-start gap-3', hideHeader ? 'justify-end' : 'justify-between')"
-    >
-      <div v-if="!hideHeader">
-        <h3 class="text-base font-medium">{{ $t('pages.budgetDetails.sharing.title') }}</h3>
-        <p class="text-muted-foreground text-sm">{{ $t('pages.budgetDetails.sharing.description') }}</p>
-      </div>
-
+    <div v-if="isOwner" class="flex items-start justify-end gap-3">
       <DemoRestricted v-if="isOwner" feature="share_budget_invite">
         <Button variant="outline" size="sm" :disabled="isDemo" @click="inviteDialogOpen = true">
           <UserPlusIcon class="mr-2 size-4" />

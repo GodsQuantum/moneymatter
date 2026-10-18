@@ -12,15 +12,16 @@
     <ScrollArea class="max-h-85 lg:max-h-60" viewport-class="max-h-85 lg:max-h-60">
       <div class="p-1.25">
         <template v-if="allowBlank && !searchTerm.trim()">
-          <button
+          <Button
             type="button"
-            class="hover:bg-accent hover:text-accent-foreground text-muted-foreground mb-1 flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-left"
+            variant="ghost"
+            class="text-muted-foreground mb-1 h-auto w-full justify-start px-2 py-1 font-normal"
             @click="toggle(BLANK_FILTER_VALUE)"
           >
             <CircleDashedIcon class="size-4 shrink-0" />
-            <span class="min-w-0 grow truncate">{{ $t('fields.budgetMultiSelect.blankOption') }}</span>
+            <span class="min-w-0 grow truncate text-left">{{ $t('fields.budgetMultiSelect.blankOption') }}</span>
             <CheckIcon v-if="budgetIds.includes(BLANK_FILTER_VALUE)" class="size-4 shrink-0" />
-          </button>
+          </Button>
           <div class="bg-border mb-1 h-px" />
         </template>
         <div v-if="isFetching && displayedBudgets.length === 0" class="text-muted-foreground py-3 text-center text-xs">
@@ -48,6 +49,7 @@
 import { loadSystemBudgets } from '@/api/budgets';
 import { VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import MultiSelectField from '@/components/fields/multi-select-field.vue';
+import { Button } from '@/components/lib/ui/button';
 import { ScrollArea } from '@/components/lib/ui/scroll-area';
 import { useNotificationCenter } from '@/components/notification-center';
 import { BLANK_FILTER_VALUE } from '@bt/shared/types';

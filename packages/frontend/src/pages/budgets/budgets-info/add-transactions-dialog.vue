@@ -4,7 +4,6 @@ import ResponsiveDialog from '@/components/common/responsive-dialog.vue';
 import Button from '@/components/lib/ui/button/Button.vue';
 import Checkbox from '@/components/lib/ui/checkbox/Checkbox.vue';
 import { ScrollArea } from '@/components/lib/ui/scroll-area';
-import { useNotificationCenter } from '@/components/notification-center';
 import RecordsFiltersDialog from '@/components/records-filters/filters-dialog.vue';
 import RecordsFilters from '@/components/records-filters/index.vue';
 import { useTransactionsWithFilters } from '@/components/records-filters/transactions-with-filters';
@@ -12,17 +11,15 @@ import TransactionRecord from '@/components/transactions-list/transaction-record
 import { useShiftMultiSelect } from '@/composable/shift-multi-select';
 import { useVirtualizedInfiniteScroll } from '@/composable/virtualized-infinite-scroll';
 import { useWindowBreakpoints } from '@/composable/window-breakpoints';
-import { extractApiErrorMessage } from '@/js/errors';
 import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
-import { useInvalidateTracker } from '../components/use-tracker-actions';
+import { reportTrackerError, useInvalidateTracker } from '../components/use-tracker-actions';
 
 const { t } = useI18n();
 
 const route = useRoute();
-const { addErrorNotification } = useNotificationCenter();
 const invalidateTracker = useInvalidateTracker();
 
 const pickedTransactionsIds = reactive<Set<string>>(new Set());
@@ -59,7 +56,11 @@ const addTransactions = async () => {
     isAddingTransactionModalVisible.value = false;
     resetSelection();
   } catch (err: unknown) {
-    addErrorNotification(extractApiErrorMessage(err) || t('pages.budgets.transactionsList.addError'));
+    reportTrackerError({
+      error: err,
+      fallbackKey: 'pages.budgets.transactionsList.addError',
+      context: { source: 'trackerAddTransactions', budgetId: currentBudgetId.value },
+    });
   }
 };
 

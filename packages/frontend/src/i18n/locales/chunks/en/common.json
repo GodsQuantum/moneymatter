@@ -218,7 +218,9 @@
     "logo": {
       "tabs": {
         "brand": "Brand",
-        "letters": "Letters"
+        "letters": "Letters",
+        "icon": "Icon",
+        "custom": "Image"
       },
       "searchPlaceholder": "Brand name or domain",
       "searchHint": "Type a brand name, or a domain like amazon.com",
@@ -238,8 +240,17 @@
       "colorLabel": "Color",
       "colorSwatchAriaLabel": "Use color {color}",
       "customColorAriaLabel": "Pick a custom color",
-      "applyLetters": "Apply",
-      "lettersSelectedLabel": "Letters “{letters}”"
+      "lettersSelectedLabel": "Letters “{letters}”",
+      "lettersHint": "1–2 letters or an emoji",
+      "chooseImage": "Choose image",
+      "replaceImage": "Replace image",
+      "imageHint": "Cropped to a square and resized to 200×200 on your device.",
+      "imageTooLarge": "The image is still over 50 KB after resizing. Try a simpler picture.",
+      "imageUnreadable": "That file couldn't be read as an image."
+    },
+    "iconPicker": {
+      "searchPlaceholder": "Search icons...",
+      "clear": "Clear icon"
     },
     "importBatchDeleteOverlay": {
       "title": "Deleting imported transactions",

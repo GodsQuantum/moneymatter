@@ -280,6 +280,25 @@ describe('Statement parser extraction that yields nothing usable', () => {
     expect(errorMessage({ response })).toMatch(/не знайдено транзакцій/);
   });
 
+  it('keeps the language of the request when an English request lands while the AI is answering', async () => {
+    await createFirstConnection();
+    global.mswMockServer.use(
+      getCustomEndpointVllmMock({
+        content: METADATA_ONLY_REPLY,
+        onBody: () => makeRequest({ method: 'get', url: '/user/settings', headers: { 'Accept-Language': 'en' } }),
+      }),
+    );
+
+    const response = await makeRequest({
+      method: 'post',
+      url: '/import/text-source/extract?lang=uk',
+      payload: { fileBase64: PNG_1X1_BASE64 },
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(errorMessage({ response })).toMatch(/не знайдено транзакцій/);
+  });
+
   it('answers 422 when every row the model returned has an unreadable date', async () => {
     await createFirstConnection();
     global.mswMockServer.use(

@@ -142,7 +142,7 @@
             </ResponsiveTooltip>
             <PlannedIndicator v-if="!(hidePlannedMarker && transaction.isPlanned)" :transaction="transaction" />
             <SplitIndicator :transaction="transaction" />
-            <RefundIndicator :transaction="transaction" />
+            <RefundIndicator v-if="!hideRefundMarker" :transaction="transaction" />
             <TagsIndicator :tags="transaction.tags ?? []" :variant="tagsVariant" />
             <AttachmentIndicator :transaction="transaction" />
             <ResponsiveTooltip
@@ -291,6 +291,7 @@ const props = withDefaults(
     compact?: boolean;
     /** Set where planned rows already sit under their own collapsible header. */
     hidePlannedMarker?: boolean;
+    hideRefundMarker?: boolean;
     tagsVariant?: TagsIndicatorVariant;
     /** Badges the category circle with the account logo, so it applies to category-circle rows only. */
     showAccount?: boolean;

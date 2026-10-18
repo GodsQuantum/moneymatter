@@ -1075,7 +1075,17 @@ export const findWithFilters = async ({
     }
   }
 
-  if (budgetIds?.length) {
+  const hasBlankBudget = !!budgetIds?.includes(BLANK_FILTER_VALUE);
+  if (hasBlankBudget) {
+    const realBudgetIds = budgetIds!.filter((id) => id !== BLANK_FILTER_VALUE);
+    if (realBudgetIds.some((id) => !UUID_PATTERN.test(id))) {
+      throw new ValidationError({ message: '"budgetIds" must contain valid record ids' });
+    }
+    const junction = `SELECT 1 FROM "BudgetTransactions" bt WHERE bt."transactionId" = "Transactions"."id"`;
+    const inNoBudget = `NOT EXISTS (${junction})`;
+    const inAnyBudget = `EXISTS (${junction} AND bt."budgetId" IN (${realBudgetIds.map((id) => `'${id}'`).join(', ')}))`;
+    pushAndCondition(literal(realBudgetIds.length ? `(${inNoBudget} OR ${inAnyBudget})` : inNoBudget));
+  } else if (budgetIds?.length) {
     const budgetTransactionIds = await BudgetTransactions.findAll({
       attributes: ['transactionId'],
       where: {

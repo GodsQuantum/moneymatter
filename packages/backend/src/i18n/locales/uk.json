@@ -214,6 +214,7 @@
     "holdingNotFoundForRecalculation": "Актив для перерахунку не знайдено.",
     "securityAlreadyInPortfolio": "Цей цінний папір вже є в портфелі.",
     "securityNotFound": "Цінний папір не знайдено.",
+    "securitySearchResultNotRecognized": "Результат пошуку цінного папера не розпізнано або він застарів. Виконайте пошук цінного папера ще раз.",
     "currencyForSecurityNotFound": "Валюту для цінного папера не знайдено.",
     "currencyNotFound": "Валюту не знайдено",
     "transactionNotFound": "Інвестиційну транзакцію не знайдено",

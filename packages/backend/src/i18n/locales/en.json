@@ -212,6 +212,7 @@
     "holdingNotFoundForRecalculation": "Holding not found for recalculation.",
     "securityAlreadyInPortfolio": "This security is already in the portfolio.",
     "securityNotFound": "Security not found.",
+    "securitySearchResultNotRecognized": "Security search result is not recognized or has expired. Search for the security again.",
     "currencyForSecurityNotFound": "Currency for security not found.",
     "currencyNotFound": "Currency not found",
     "transactionNotFound": "Investment transaction not found",

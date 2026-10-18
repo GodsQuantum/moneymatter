@@ -6,8 +6,7 @@ import { withTransaction } from '@services/common/with-transaction';
 
 import { dataProviderFactory } from '../data-providers';
 import { toProviderSymbol } from '../data-providers/base-provider';
-import { createMissingSecurities } from '../securities-manage';
-import { findSecurityByIdentity } from './identity';
+import { upsertSecuritiesFromSearch } from '../securities-manage';
 
 interface AddSecurityFromSearchParams {
   searchResult: SecuritySearchResult;
@@ -31,23 +30,10 @@ const addSecurityFromSearchImpl = async ({
 }: AddSecurityFromSearchParams): Promise<AddSecurityFromSearchResult> => {
   logger.info(`Adding security from search: ${searchResult.symbol} - ${searchResult.name}`);
 
-  // Step 1: Create the security when it does not exist yet. An existing row is left as stored.
-  await createMissingSecurities({ securities: [searchResult] });
+  // Step 1: Create or refresh the security from the provider's copy of the search result.
+  const security = (await upsertSecuritiesFromSearch({ securities: [searchResult] })).securities[0]!;
 
-  // Step 2: Resolve the created or existing row via the shared identity helper –
-  // the same key shape `createMissingSecurities` used for dedup. A non-crypto
-  // search result whose existing row was sourced from a different provider
-  // (e.g. an FMP-sourced VOO matched against a Yahoo hit) resolves to that
-  // existing row instead of looking like a fresh insert.
-  const security = await findSecurityByIdentity(searchResult);
-
-  if (!security) {
-    throw new Error(
-      `Failed to create/find security with providerSymbol: ${searchResult.providerSymbol} (provider: ${searchResult.providerName})`,
-    );
-  }
-
-  // Step 3: Fetch and store the latest price immediately (unless skipped)
+  // Step 2: Fetch and store the latest price immediately (unless skipped)
   let latestPrice: AddSecurityFromSearchResult['latestPrice'];
 
   // Provider and symbol come from the stored row, never the request: the price lands on a row

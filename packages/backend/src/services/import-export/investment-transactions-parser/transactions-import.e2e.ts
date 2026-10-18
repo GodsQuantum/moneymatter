@@ -494,6 +494,9 @@ describe('Investment transactions AI import — E2E', () => {
         raw: true,
       });
 
+      installCoingeckoMock({ coins: [{ id: 'solana', symbol: 'sol', name: 'Solana', market_cap_rank: 5 }] });
+      await helpers.searchSecurities({ payload: { query: 'SOL', assetClass: ASSET_CLASS.crypto }, raw: true });
+
       const result = await helpers.investmentImportExecute({
         payload: {
           holdings: [
@@ -560,6 +563,64 @@ describe('Investment transactions AI import — E2E', () => {
       // Verify both transactions
       const txs = await InvestmentTransaction.findAll({ where: { securityId: sol!.id } });
       expect(txs).toHaveLength(2);
+    });
+
+    it('skips a holding whose security was never returned by a provider search', async () => {
+      const portfolio = await helpers.createPortfolio({
+        payload: helpers.buildPortfolioPayload({ name: 'Crypto' }),
+        raw: true,
+      });
+
+      const result = await helpers.investmentImportExecute({
+        payload: {
+          holdings: [
+            {
+              tempId: 'holding-1',
+              parsedSymbol: 'FORGED',
+              parsedName: 'Forged Coin',
+              resolvedSecurity: {
+                securityId: null,
+                providerSymbol: 'forged-coin',
+                symbol: 'FORGED',
+                name: 'Forged Coin',
+                assetClass: ASSET_CLASS.crypto,
+                providerName: SECURITY_PROVIDER.coingecko,
+                currencyCode: 'USD',
+                cryptoCurrencyCode: 'FORGED',
+                exchangeName: 'CoinGecko',
+                alreadyInDb: false,
+              },
+              resolvedConfidence: 'auto',
+              portfolioId: portfolio.id,
+              currencyCode: 'USD',
+              hasExistingHolding: false,
+              transactions: [
+                {
+                  tempId: 'tx-1',
+                  date: '2024-04-01',
+                  side: 'buy',
+                  quantity: '10',
+                  price: '1',
+                  fees: '0',
+                  amount: '10',
+                  possibleDuplicateOf: null,
+                },
+              ],
+            },
+          ],
+          skipTempIds: [],
+        },
+        raw: true,
+      });
+
+      expect(result.createdSecurities).toBe(0);
+      expect(result.createdTransactions).toBe(0);
+      expect(result.skippedHoldings).toBe(1);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toContain('Skipped "FORGED"');
+      expect(result.warnings[0]).toContain('Search for the security again');
+
+      expect(await Securities.findOne({ where: { providerSymbol: 'forged-coin' } })).toBeNull();
     });
 
     it('merges new transactions into an existing holding', async () => {

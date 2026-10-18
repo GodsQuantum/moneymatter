@@ -2,7 +2,7 @@
  * Commit a reviewed batch of parsed investment transactions to the DB.
  *
  * For each holding row:
- *   1. Ensure the Security exists (create from the resolvedSecurity snapshot if not).
+ *   1. Ensure the Security exists (create it from the search result remembered at preview time if not).
  *   2. Ensure the Holding for (portfolio, security) exists – create or merge.
  *   3. Insert each child transaction via the canonical
  *      `createInvestmentTransaction` service so cash balance, refAmount, and
@@ -23,9 +23,8 @@ import Holdings from '@models/investments/holdings.model';
 import Portfolios from '@models/investments/portfolios.model';
 import Securities from '@models/investments/securities.model';
 import { addUserCurrencies } from '@services/currencies/add-user-currency';
-import { createMissingSecurities } from '@services/investments/securities-manage';
+import { upsertSecuritiesFromSearch } from '@services/investments/securities-manage';
 import { syncHistoricalPrices } from '@services/investments/securities-price/historical-sync.service';
-import { findSecurityByIdentity } from '@services/investments/securities/identity';
 import { createInvestmentTransaction } from '@services/investments/transactions/create.service';
 
 interface ExecuteImportParams {
@@ -89,7 +88,7 @@ export async function executeInvestmentImport({
     const resolvedSecurity = holding.resolvedSecurity;
     const { providerName } = resolvedSecurity;
 
-    // Steps 1+2 below all run unguarded queries (`createMissingSecurities`,
+    // Steps 1+2 below all run unguarded queries (`upsertSecuritiesFromSearch`,
     // `addUserCurrencies`, `Holdings.create`) that can throw on FK violations,
     // unique-key collisions from concurrent imports, or provider lookups that
     // hit a transient error. Without this wrapper a single throw would abort
@@ -103,27 +102,18 @@ export async function executeInvestmentImport({
         security = await Securities.findByPk(resolvedSecurity.securityId);
       }
       if (!security) {
-        // Build a SecuritySearchResult from the full resolvedSecurity snapshot –
-        // it carries every field the insert needs (assetClass, providerName,
-        // currencyCode, exchangeName, cryptoCurrencyCode).
-        const provisional = {
-          symbol: resolvedSecurity.symbol.toUpperCase(),
-          providerSymbol: resolvedSecurity.providerSymbol,
-          name: resolvedSecurity.name,
-          assetClass: resolvedSecurity.assetClass,
-          providerName,
-          currencyCode: resolvedSecurity.currencyCode,
-          cryptoCurrencyCode: resolvedSecurity.cryptoCurrencyCode,
-          exchangeName: resolvedSecurity.exchangeName,
-        };
-        await createMissingSecurities({ securities: [provisional] });
-        // Resolve via the same identity helper the insert used so a non-crypto
-        // row sourced under a different provider name still finds the existing
-        // securityId instead of looking like a fresh insert.
-        security = await findSecurityByIdentity(provisional);
-        if (!security) {
-          throw new Error('Security insert completed but the security row was not found.');
-        }
+        const { securities } = await upsertSecuritiesFromSearch({
+          securities: [
+            {
+              symbol: resolvedSecurity.symbol.toUpperCase(),
+              providerSymbol: resolvedSecurity.providerSymbol,
+              assetClass: resolvedSecurity.assetClass,
+              providerName,
+              currencyCode: resolvedSecurity.currencyCode,
+            },
+          ],
+        });
+        security = securities[0]!;
         createdSecurities += 1;
         newSecurityIds.add(security.id);
       }

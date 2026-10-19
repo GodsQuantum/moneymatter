@@ -35,7 +35,7 @@ export default class TrackerSuggestions extends Model {
   resolvedAt!: Date | null;
 
   @BelongsTo(() => Trackers, { foreignKey: 'trackerId', onDelete: 'CASCADE' })
-  budget?: Trackers;
+  tracker?: Trackers;
 
   @BelongsTo(() => Transactions, { foreignKey: 'transactionId', onDelete: 'CASCADE' })
   transaction?: Transactions;

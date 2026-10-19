@@ -29,7 +29,7 @@ export const accessWhere = async ({ policy }: { policy: AccessPolicy }): Promise
   }
 
   const rows = (await TrackerTransactions.findAll({
-    where: { trackerId: { [Op.in]: policy.budgetScoped } },
+    where: { trackerId: { [Op.in]: policy.trackerScoped } },
     attributes: ['transactionId'],
     raw: true,
   })) as unknown as { transactionId: string }[];

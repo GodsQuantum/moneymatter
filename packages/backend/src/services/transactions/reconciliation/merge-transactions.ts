@@ -71,15 +71,15 @@ export const mergeTransactions = withTransaction(
     }
 
     const where = { transactionId: { [Op.in]: transactionIds } };
-    const [budgetLinks, groupLinks, subscriptionLinks, periodLinks] = await Promise.all([
+    const [trackerLinks, groupLinks, subscriptionLinks, periodLinks] = await Promise.all([
       TrackerTransactions.findAll({ where }),
       TransactionGroupItems.findAll({ where }),
       SubscriptionTransactions.findAll({ where: { ...where, status: SUBSCRIPTION_LINK_STATUS.active } }),
       SubscriptionPeriods.findAll({ where, attributes: ['id', 'transactionId'] }),
     ]);
 
-    const budgetsToMove = planOrReject({
-      links: budgetLinks.map((l) => ({ transactionId: l.transactionId, target: l.trackerId })),
+    const trackersToMove = planOrReject({
+      links: trackerLinks.map((l) => ({ transactionId: l.transactionId, target: l.trackerId })),
       survivorId,
       single: false,
       key: 'transactions.reconciliation.budgetConflict',
@@ -103,12 +103,12 @@ export const mergeTransactions = withTransaction(
       key: 'transactions.reconciliation.subscriptionConflict',
     });
 
-    if (budgetsToMove.length) {
+    if (trackersToMove.length) {
       await TrackerTransactions.bulkCreate(
-        budgetsToMove.map((trackerId) => ({
+        trackersToMove.map((trackerId) => ({
           trackerId,
           transactionId: survivorId,
-          metadata: budgetLinks.find((l) => l.trackerId === trackerId)!.metadata,
+          metadata: trackerLinks.find((l) => l.trackerId === trackerId)!.metadata,
         })),
       );
     }

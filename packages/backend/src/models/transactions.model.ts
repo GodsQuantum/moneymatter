@@ -211,7 +211,7 @@ export default class Transactions extends Model {
     foreignKey: 'transactionId',
     otherKey: 'trackerId',
   })
-  budgets!: Trackers[];
+  trackers!: Trackers[];
 
   @BelongsToMany(() => Tags, {
     through: { model: () => TransactionTags, unique: false },
@@ -308,7 +308,7 @@ export default class Transactions extends Model {
   @MoneyField({ storage: 'cents' })
   declare cashbackAmount: Money;
 
-  // Metadata only: no balance, statistics or budget path reads these. What the user spent in a
+  // Metadata only: no balance, statistics, tracker or budget-plan path reads these. What the user spent in a
   // foreign currency, with its ISO 4217 code. Both hold a value or both stay null.
   @MoneyField({ storage: 'cents', allowNull: true })
   declare originalAmount: Money | null;
@@ -850,8 +850,8 @@ export const findWithFilters = async ({
   accountType,
   accountIds,
   excludeAccountIds,
-  budgetIds,
-  excludedBudgetIds,
+  trackerIds,
+  excludedTrackerIds,
   tagIds: requestedTagIds,
   excludedTagIds,
   order = SORT_DIRECTIONS.desc,
@@ -899,8 +899,8 @@ export const findWithFilters = async ({
   accountIds?: string[];
   /** Filter: exclude transactions from these account IDs */
   excludeAccountIds?: string[];
-  budgetIds?: string[];
-  excludedBudgetIds?: string[];
+  trackerIds?: string[];
+  excludedTrackerIds?: string[];
   tagIds?: string[];
   excludedTagIds?: string[];
   order?: SORT_DIRECTIONS;
@@ -1013,7 +1013,7 @@ export const findWithFilters = async ({
   if (categoryIds && categoryIds.length > 0) {
     // Find transactions that have splits with any of the requested category IDs.
     // Under `access: 'pre-scoped'` we widen the lookup to any user's splits — the caller's
-    // upstream scoping (accessible accountIds / budget ids) constrains the final rows, so
+    // upstream scoping (accessible accountIds / tracker ids) constrains the final rows, so
     // this stays safe.
     const splitsWhere: Record<string, unknown> = { categoryId: { [Op.in]: categoryIds } };
     if (access !== 'pre-scoped') splitsWhere.userId = access.creator;
@@ -1100,38 +1100,38 @@ export const findWithFilters = async ({
     }
   }
 
-  const hasBlankBudget = !!budgetIds?.includes(BLANK_FILTER_VALUE);
-  if (hasBlankBudget) {
+  const hasBlankTracker = !!trackerIds?.includes(BLANK_FILTER_VALUE);
+  if (hasBlankTracker) {
     pushAndCondition(
       buildNoneOrAnyJunctionCondition({
-        ids: budgetIds!.filter((id) => id !== BLANK_FILTER_VALUE),
-        paramName: 'budgetIds',
+        ids: trackerIds!.filter((id) => id !== BLANK_FILTER_VALUE),
+        paramName: 'trackerIds',
         junctionTable: 'TrackerTransactions',
         alias: 'bt',
         column: 'trackerId',
       }),
     );
-  } else if (budgetIds?.length) {
-    const budgetTransactionIds = await TrackerTransactions.findAll({
+  } else if (trackerIds?.length) {
+    const trackerTransactionIds = await TrackerTransactions.findAll({
       attributes: ['transactionId'],
       where: {
-        trackerId: { [Op.in]: budgetIds },
+        trackerId: { [Op.in]: trackerIds },
       },
       raw: true,
     }).then((results) => results.map((r) => r.transactionId));
 
     whereClause.id = {
       ...(whereClause.id as object),
-      [Op.in]: budgetTransactionIds,
+      [Op.in]: trackerTransactionIds,
     };
   }
 
-  if (excludedBudgetIds?.length) {
+  if (excludedTrackerIds?.length) {
     const excludedTransactionIds = await TrackerTransactions.findAll({
       attributes: ['transactionId'],
       where: {
         trackerId: {
-          [Op.in]: excludedBudgetIds,
+          [Op.in]: excludedTrackerIds,
         },
       },
       raw: true,

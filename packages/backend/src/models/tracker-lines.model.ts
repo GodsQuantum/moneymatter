@@ -36,7 +36,7 @@ export default class TrackerLines extends Model {
   declare updatedAt: Date;
 
   @BelongsTo(() => Trackers, { foreignKey: 'trackerId', onDelete: 'CASCADE' })
-  budget?: Trackers;
+  tracker?: Trackers;
 
   @BelongsToMany(() => Categories, {
     through: { model: () => TrackerLineCategories, unique: false },

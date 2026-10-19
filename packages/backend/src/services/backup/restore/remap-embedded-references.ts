@@ -135,7 +135,7 @@ export async function remapEmbeddedReferences({
     subscriptions: String(Subscriptions.getTableName()),
     payees: String(Payees.getTableName()),
     accounts: String(Accounts.getTableName()),
-    budgets: String(Trackers.getTableName()),
+    trackers: String(Trackers.getTableName()),
     tags: String(Tags.getTableName()),
     categories: String(Categories.getTableName()),
     accountGroups: String(AccountGroup.getTableName()),
@@ -261,7 +261,7 @@ export async function remapEmbeddedReferences({
     },
   });
 
-  // 6. Notifications.payload → budgetId (Trackers), tagId (Tags), transactionIds[] (Transactions).
+  // 6. Notifications.payload → trackerId (Trackers), tagId (Tags), transactionIds[] (Transactions).
   //    Share payloads' invitationId/shareId/resourceId reference cross-user data
   //    that isn't restored, so they're left verbatim.
   await rewriteColumn({
@@ -274,8 +274,8 @@ export async function remapEmbeddedReferences({
     mutate: ({ draft }) => {
       if (typeof draft !== 'object' || draft === null) return;
       const p = draft as Record<string, unknown>;
-      if (typeof p.budgetId === 'string')
-        p.budgetId = remapId({ insertedIds, targetTable: tables.budgets, oldId: p.budgetId });
+      if (typeof p.trackerId === 'string')
+        p.trackerId = remapId({ insertedIds, targetTable: tables.trackers, oldId: p.trackerId });
       if (typeof p.tagId === 'string') p.tagId = remapId({ insertedIds, targetTable: tables.tags, oldId: p.tagId });
       remapIdArrayInPlace({ arr: p.transactionIds, targetTable: tables.transactions, insertedIds });
     },
@@ -350,8 +350,8 @@ export function remapSavedTransactionViewIds({
     categoryIds: Categories,
     tagIds: Tags,
     payeeIds: Payees,
-    budgetIds: Trackers,
-    excludedBudgetIds: Trackers,
+    trackerIds: Trackers,
+    excludedTrackerIds: Trackers,
   };
 
   for (const view of views) {

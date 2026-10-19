@@ -9,7 +9,7 @@ import isPlainObject from 'lodash/isPlainObject';
 import omit from 'lodash/omit';
 import { Op } from 'sequelize';
 
-import { BACKUP_TABLES, renameRowKeys, type BackupDumpScope, type BackupTableDef } from './registry';
+import { BACKUP_TABLES, type BackupDumpScope, type BackupTableDef } from './registry';
 import { createScopeResolver, type ScopeResolver } from './scope-resolver';
 
 type Row = Record<string, unknown>;
@@ -131,8 +131,7 @@ async function dumpTable({
   // raw:true is the sanctioned exception to the "no raw on Money" rule: a
   // backup must carry exact DB storage values (cents integers, decimal
   // strings, JSONB, arrays) and bypassing the @MoneyField getters is the point.
-  const dbRows = (await def.model.findAll({ where, raw: true, paranoid: false })) as unknown as Row[];
-  const rows = def.fileColumns ? renameRowKeys({ rows: dbRows, renames: def.fileColumns }) : dbRows;
+  const rows = (await def.model.findAll({ where, raw: true, paranoid: false })) as unknown as Row[];
 
   if (def.stripSecret === 'aiKeys') stripAiKeys({ rows });
   if (def.stripSecret === 'bankCredentials') {

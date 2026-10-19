@@ -1,6 +1,6 @@
 import {
-  BUDGET_STATUSES,
-  BUDGET_TYPES,
+  TRACKER_STATUSES,
+  TRACKER_TYPES,
   RecordId,
   TRACKER_AI_DEFAULT_PRE_WINDOW_DAYS,
   type TrackerAiPreWindowDays,
@@ -28,15 +28,15 @@ export default class Trackers extends Model {
   @Column({ allowNull: false, type: DataType.STRING(200) })
   name!: string;
 
-  @Column({ allowNull: false, type: DataType.ENUM({ values: Object.values(BUDGET_STATUSES) }) })
-  status!: BUDGET_STATUSES;
+  @Column({ allowNull: false, type: DataType.ENUM({ values: Object.values(TRACKER_STATUSES) }) })
+  status!: TRACKER_STATUSES;
 
   @Column({
     allowNull: false,
-    defaultValue: BUDGET_TYPES.manual,
-    type: DataType.ENUM(...Object.values(BUDGET_TYPES)),
+    defaultValue: TRACKER_TYPES.manual,
+    type: DataType.ENUM(...Object.values(TRACKER_TYPES)),
   })
-  type!: BUDGET_TYPES;
+  type!: TRACKER_TYPES;
 
   @Column({ type: DataType.DATE, allowNull: true })
   startDate!: Date | null;

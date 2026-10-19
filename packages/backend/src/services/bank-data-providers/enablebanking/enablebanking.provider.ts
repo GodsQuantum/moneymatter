@@ -2144,7 +2144,7 @@ export class EnableBankingProvider extends BaseBankDataProvider {
   /**
    * Conservative gate for reconcile pass (b). Names what would be silently lost
    * by destroying the orphan – dependent rows (transferId, refundLinked, splits,
-   * tags, refunds, budgets, subscriptions, group membership) or a user-mutable
+   * tags, refunds, trackers, subscriptions, group membership) or a user-mutable
    * scalar that diverges from the canonical. Returns null when the orphan is safe
    * to delete.
    *

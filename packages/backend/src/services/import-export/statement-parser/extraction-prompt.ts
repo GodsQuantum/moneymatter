@@ -100,6 +100,8 @@ export function createImageExtractionPrompt({ today }: { today: string }): strin
 
 A receipt is ONE transaction: its grand total including tax, on the purchase date, with the store as the merchant. Never list a receipt's line items as separate transactions.
 
+A banking app usually titles a transaction with the merchant (e.g. "SP STUSSY EUROPE AMSTERDAM NLD"). Write that title as the merchant too, even though it is also the description.
+
 Today is ${today}. Resolve relative dates ("Today", "Yesterday") against it, and when a date shows no year, use the latest year that does not put it in the future.
 
 Output CSV only. First line metadata, then transactions.`;
@@ -226,6 +228,25 @@ function readOriginalAmount({ amountStr, currencyStr }: { amountStr: string; cur
   return { originalAmount, originalCurrencyCode };
 }
 
+/** The model sometimes adds or drops a metadata field, which pushes a date into the currency slot. */
+function readCurrencyCode({ fields }: { fields: string[] }): string | null {
+  const code =
+    fields
+      .slice(1)
+      .map((field) => field.toUpperCase())
+      .find((field) => cc.code(field) !== undefined) ?? null;
+
+  const currencySlot = fields[4];
+  if (currencySlot && currencySlot.toUpperCase() !== code) {
+    logger.info('[Statement Parser] Metadata currency slot held no valid code', {
+      currencySlot,
+      resolvedCurrency: code,
+    });
+  }
+
+  return code;
+}
+
 /** `parseDecimalAmount` rejects signed input, and a balance can be negative when the account is overdrawn. */
 function parseBalance({ raw }: { raw: string }): number | null {
   const isNegative = raw.startsWith('-');
@@ -299,7 +320,7 @@ export function parseAIResponse({ response }: { response: string }): AIExtractio
               to: metadataFields[3],
             }
           : null,
-      currencyCode: metadataFields[4] || null,
+      currencyCode: readCurrencyCode({ fields: metadataFields }),
     };
 
     // Parse transactions (remaining lines)

@@ -37,6 +37,28 @@ describe('parseAIResponse', () => {
     });
   });
 
+  describe('metadata currency', () => {
+    const ROW = '2026-10-16 18:32:37,SP STUSSY EUROPE AMSTERDAM NLD,,218.98,E,,90,937.00,PLN,';
+    const currencyOf = ({ metadataLine }: { metadataLine: string }) =>
+      parseAIResponse({ response: [metadataLine, ROW].join('\n') })?.metadata.currencyCode;
+
+    it('finds the currency when an extra field pushed a date into its slot', () => {
+      expect(currencyOf({ metadataLine: ',,,2026-10-16,2026-10-16,EUR' })).toBe('EUR');
+    });
+
+    it('uppercases a lowercase code', () => {
+      expect(currencyOf({ metadataLine: 'Revolut,2112,2026-10-16,2026-10-16,eur' })).toBe('EUR');
+    });
+
+    it.each([
+      ['a date', 'Revolut,2112,2026-10-15,2026-10-16,2026-10-16'],
+      ['a symbol', 'Revolut,2112,2026-10-16,2026-10-16,€'],
+      ['nothing', 'Revolut,2112,2026-10-16,2026-10-16,'],
+    ])('reports no currency when the line carries %s instead of a code', (_, metadataLine) => {
+      expect(currencyOf({ metadataLine })).toBeNull();
+    });
+  });
+
   describe('date formats', () => {
     it('keeps a row whose timestamp has fractional seconds', () => {
       const result = parse({ rows: ['2026-06-16 18:17:19.587,Zona;Clips BYD,Sebastian,250,E,,90'] });

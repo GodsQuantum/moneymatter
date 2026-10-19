@@ -17,7 +17,7 @@
       "viewTransactions": "View transactions",
       "viewAnalytics": "View analytics",
       "saving": "Saving...",
-      "saveChanges": "Save Changes",
+      "saveChanges": "Save changes",
       "done": "Done",
       "failed": "Failed",
       "viewAll": "View all",
@@ -97,13 +97,13 @@
       "vehicle": "Vehicle"
     },
     "paymentTypes": {
-      "creditCard": "Credit Card",
-      "bankTransfer": "Bank Transfer",
+      "creditCard": "Credit card",
+      "bankTransfer": "Bank transfer",
       "cash": "Cash",
-      "debitCard": "Debit Card",
-      "mobilePayment": "Mobile Payment",
+      "debitCard": "Debit card",
+      "mobilePayment": "Mobile payment",
       "voucher": "Voucher",
-      "webPayment": "Web Payment"
+      "webPayment": "Web payment"
     },
     "vehicleClasses": {
       "sedan": "Sedan",
@@ -123,11 +123,11 @@
     },
     "aiFeatures": {
       "categorization": {
-        "name": "Transaction Categorization",
+        "name": "Transaction categorization",
         "description": "Automatically categorize transactions based on their description and merchant"
       },
       "statementParsing": {
-        "name": "Statement Parser",
+        "name": "Statement parser",
         "description": "Extract transactions from bank statements (PDF, CSV, TXT), receipts and screenshots using AI"
       },
       "investmentTransactionsParsing": {
@@ -167,7 +167,7 @@
         }
       }
     },
-    "outOfWallet": "Out of Wallet",
+    "outOfWallet": "Out of wallet",
     "dateSelector": {
       "dialogTitle": "Date range",
       "dueDate": "Due date",
@@ -408,7 +408,7 @@
     "featureNotAvailable": "This feature is not available in demo mode",
     "passwordChangeRestricted": "Password changes are not available in demo mode",
     "investmentsRestricted": {
-      "title": "Investments Unavailable in Demo",
+      "title": "Investments unavailable in demo",
       "description": "The investments feature is not available in demo mode. Please sign up for a full account to access investments tracking."
     },
     "banner": {
@@ -506,7 +506,7 @@
   },
   "transactionGroups": {
     "groupDialog": {
-      "editTitle": "Edit Group",
+      "editTitle": "Edit group",
       "nameLabel": "Name",
       "noteLabel": "Note (optional)",
       "notePlaceholder": "Optional note...",
@@ -514,7 +514,7 @@
       "savingAction": "Save",
       "cancelButton": "Cancel",
       "editAction": "Edit",
-      "deleteAction": "Delete Group",
+      "deleteAction": "Delete group",
       "transactionsLabel": "Transactions",
       "deleteGroupTitle": "Delete group",
       "deleteGroupDescription": "Are you sure you want to delete \"{groupName}\"? The transactions will not be deleted.",
@@ -522,7 +522,7 @@
       "removeTransactionDescription": "This will leave fewer than 2 transactions in the group, so the group will be deleted. Continue?",
       "removeTransactionDescriptionNormal": "Are you sure you want to remove this transaction from the group?",
       "removeButtonText": "Remove",
-      "removeAndDeleteButtonText": "Remove & Delete Group",
+      "removeAndDeleteButtonText": "Remove & delete group",
       "summary": {
         "transactions": "Transactions",
         "net": "Net",

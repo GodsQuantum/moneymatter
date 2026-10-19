@@ -60,7 +60,7 @@
           "delimiter": "Роздільник",
           "extracting": "Вилучення...",
           "detecting": "Виявлення дублікатів…",
-          "nextExtract": "Далі: Вилучити значення",
+          "nextExtract": "Далі: вилучити значення",
           "continueToDuplicates": "Перейти до перевірки дублікатів"
         },
         "execute": {

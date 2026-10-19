@@ -4,6 +4,7 @@ import { logger } from '@js/utils/logger';
 import { setClientIpHeaderMiddleware } from '@middlewares/client-ip-header';
 import { requestIdMiddleware } from '@middlewares/request-id';
 import { sessionMiddleware } from '@middlewares/session-id';
+import { stripCloudflareAccessCookiesMiddleware } from '@middlewares/strip-cloudflare-access-cookies';
 import { MS_MONEY_FULL_PATHS } from '@routes/import-export/ms-money-paths';
 import { OFX_FULL_PATHS } from '@routes/import-export/ofx-paths';
 import cors from 'cors';
@@ -24,6 +25,9 @@ export function setupMiddleware(app: Express) {
   app.use(requestIdMiddleware);
 
   app.use(setClientIpHeaderMiddleware);
+
+  // Must run before the auth routes, including the register patch, which treats any cookie as a session.
+  app.use(stripCloudflareAccessCookiesMiddleware);
 
   // Opt-in (PERF_DEBUG=true): tag responses with per-request query count + timing.
   if (isPerfDebugEnabled) {

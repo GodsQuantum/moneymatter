@@ -312,6 +312,22 @@ export function betterAuth(config: BetterAuthConfig): AuthInstance {
         });
       }
 
+      // Mirrors better-auth's origin check: any `Cookie` header demands an `Origin` header.
+      if (path === '/oauth2/register' && request.method === 'POST') {
+        if (request.headers.has('cookie') && !request.headers.get('origin')) {
+          return new Response(JSON.stringify({ message: 'Missing or null Origin', code: 'MISSING_OR_NULL_ORIGIN' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        const body = (await request.json()) as Record<string, unknown>;
+        return new Response(JSON.stringify({ ...body, client_id: `test-registered-client-${crypto.randomUUID()}` }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       // Default: not found
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,

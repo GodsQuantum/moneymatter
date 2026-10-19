@@ -1,6 +1,6 @@
 import Accounts from '@models/accounts.model';
 import BankDataProviderConnections from '@models/bank-data-provider-connections.model';
-import Budgets from '@models/budget.model';
+import Trackers from '@models/trackers.model';
 import { countTransactions } from '@models/transactions-query';
 import UserSettings, {
   DEFAULT_ONBOARDING_STATE,
@@ -124,7 +124,7 @@ export const detectCompletedTasks = withTransaction(async ({ userId }: { userId:
       countTransactions({ planned: 'include', access: { creator: userId }, balanceAdjustments: 'include' }),
 
       // Check if user has created any budgets
-      Budgets.count({ where: { userId } }),
+      Trackers.count({ where: { userId } }),
 
       // Check if user has connected any bank accounts
       BankDataProviderConnections.count({ where: { userId } }),

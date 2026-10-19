@@ -12,7 +12,6 @@ import AccountGroup from '@models/accounts-groups/account-groups.model';
 import Accounts from '@models/accounts.model';
 import BankDataProviderConnections from '@models/bank-data-provider-connections.model';
 import BudgetLines from '@models/budget-lines.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
 import PortfolioTransfers from '@models/investments/portfolio-transfers.model';
 import Portfolios from '@models/investments/portfolios.model';
@@ -21,6 +20,7 @@ import Payees from '@models/payees.model';
 import SubscriptionCandidates from '@models/subscription-candidates.model';
 import Subscriptions from '@models/subscriptions.model';
 import Tags from '@models/tags.model';
+import Trackers from '@models/trackers.model';
 import TransactionAutomations from '@models/transaction-automations.model';
 import Transactions from '@models/transactions.model';
 import VentureEventLinks from '@models/venture/venture-event-links.model';
@@ -135,7 +135,7 @@ export async function remapEmbeddedReferences({
     subscriptions: String(Subscriptions.getTableName()),
     payees: String(Payees.getTableName()),
     accounts: String(Accounts.getTableName()),
-    budgets: String(Budgets.getTableName()),
+    budgets: String(Trackers.getTableName()),
     tags: String(Tags.getTableName()),
     categories: String(Categories.getTableName()),
     accountGroups: String(AccountGroup.getTableName()),
@@ -261,7 +261,7 @@ export async function remapEmbeddedReferences({
     },
   });
 
-  // 6. Notifications.payload → budgetId (Budgets), tagId (Tags), transactionIds[] (Transactions).
+  // 6. Notifications.payload → budgetId (Trackers), tagId (Tags), transactionIds[] (Transactions).
   //    Share payloads' invitationId/shareId/resourceId reference cross-user data
   //    that isn't restored, so they're left verbatim.
   await rewriteColumn({
@@ -350,8 +350,8 @@ export function remapSavedTransactionViewIds({
     categoryIds: Categories,
     tagIds: Tags,
     payeeIds: Payees,
-    budgetIds: Budgets,
-    excludedBudgetIds: Budgets,
+    budgetIds: Trackers,
+    excludedBudgetIds: Trackers,
   };
 
   for (const view of views) {

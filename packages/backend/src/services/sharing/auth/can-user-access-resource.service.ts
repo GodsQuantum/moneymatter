@@ -10,8 +10,8 @@ import {
 import { UnexpectedError } from '@js/errors';
 import { logger } from '@js/utils/logger';
 import Accounts from '@models/accounts.model';
-import Budgets from '@models/budget.model';
 import ResourceShares from '@models/resource-shares.model';
+import Trackers from '@models/trackers.model';
 import Users from '@models/users.model';
 import { Op } from 'sequelize';
 
@@ -83,7 +83,7 @@ const RESOURCE_OWNER_RESOLVERS: Record<ResourceType, ResourceOwnerResolver> = {
   // branch.
   [RESOURCE_TYPES.household]: async (resourceId) => toPositiveInt(resourceId),
   [RESOURCE_TYPES.budget]: async (resourceId) => {
-    const budget = (await Budgets.findOne({
+    const budget = (await Trackers.findOne({
       where: { id: resourceId },
       attributes: ['userId'],
       raw: true,
@@ -118,7 +118,7 @@ const RESOURCE_NAME_RESOLVERS: Record<ResourceType, ResourceNameResolver> = {
     return owner ? formatHouseholdLabel(owner.username) : null;
   },
   [RESOURCE_TYPES.budget]: async (resourceId) => {
-    const budget = (await Budgets.findOne({
+    const budget = (await Trackers.findOne({
       where: { id: resourceId },
       attributes: ['name'],
       raw: true,

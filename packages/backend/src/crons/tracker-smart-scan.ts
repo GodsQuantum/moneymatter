@@ -1,6 +1,6 @@
 import { BUDGET_STATUSES, BUDGET_TYPES } from '@bt/shared/types';
-import Budgets from '@models/budget.model';
 import { connection } from '@models/connection';
+import Trackers from '@models/trackers.model';
 import { TRACKER_SCAN_ENDED_GRACE_DAYS } from '@services/budgets/smart-tracking/run-tracker-scan';
 import { enqueueTrackerScan } from '@services/budgets/smart-tracking/tracker-scan-queue';
 import { subDays } from 'date-fns';
@@ -13,7 +13,7 @@ const ACTIVE_WITHIN_DAYS = 30;
 /** Queues a scan for every smart tracker still in range whose owner signed in recently. */
 export const runTrackerSmartScanCron = async ({ now = new Date() }: { now?: Date } = {}) => {
   const activeSince = connection.sequelize.escape(subDays(now, ACTIVE_WITHIN_DAYS));
-  const budgets = await Budgets.findAll({
+  const budgets = await Trackers.findAll({
     where: {
       aiEnabled: true,
       type: BUDGET_TYPES.manual,
@@ -22,7 +22,7 @@ export const runTrackerSmartScanCron = async ({ now = new Date() }: { now?: Date
       [Op.and]: [
         { [Op.or]: [{ endDate: null }, { endDate: { [Op.gte]: subDays(now, TRACKER_SCAN_ENDED_GRACE_DAYS) } }] },
         literal(
-          `"Budgets"."userId" IN (SELECT u."id" FROM "Users" u JOIN ba_session s ON s."userId" = u."authUserId" WHERE s."updatedAt" >= ${activeSince})`,
+          `"Trackers"."userId" IN (SELECT u."id" FROM "Users" u JOIN ba_session s ON s."userId" = u."authUserId" WHERE s."updatedAt" >= ${activeSince})`,
         ),
       ],
     },

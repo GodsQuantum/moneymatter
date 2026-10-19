@@ -12,12 +12,12 @@ import {
 } from '@bt/shared/types';
 import { logger } from '@js/utils/logger';
 import Accounts from '@models/accounts.model';
-import BudgetTransactions from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
 import { connection } from '@models/connection';
 import Payees from '@models/payees.model';
 import TrackerSuggestions from '@models/tracker-suggestions.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import { findTransactions } from '@models/transactions-query';
 import type Transactions from '@models/transactions.model';
 import { type AIClientResult, AI_MAX_OUTPUT_TOKENS, aiCallGuards, createAIClient } from '@services/ai';
@@ -41,14 +41,14 @@ const MAX_REASON_LENGTH = 240;
 /** A tracker keeps getting scanned this long after it ends, for late-posting bank rows. */
 export const TRACKER_SCAN_ENDED_GRACE_DAYS = 14;
 
-type TrackerSchedule = Pick<Budgets, 'aiEnabled' | 'type' | 'status' | 'startDate' | 'endDate'>;
+type TrackerSchedule = Pick<Trackers, 'aiEnabled' | 'type' | 'status' | 'startDate' | 'endDate'>;
 
 /** The one scan-eligibility rule; the cron's SQL filter mirrors it. */
 export const getTrackerScanBlocker = ({
   budget,
   now,
 }: {
-  budget: Pick<Budgets, 'status' | 'startDate' | 'endDate'>;
+  budget: Pick<Trackers, 'status' | 'startDate' | 'endDate'>;
   now: Date;
 }): Extract<TrackerScanPausedReason, 'archived' | 'no_start_date' | 'ended'> | null => {
   if (budget.status === BUDGET_STATUSES.archived) return 'archived';
@@ -134,7 +134,7 @@ const buildUserMessage = ({
   rejected,
   candidates,
 }: {
-  budget: Budgets;
+  budget: Trackers;
   linked: PromptTransaction[];
   rejected: PromptTransaction[];
   candidates: string;
@@ -188,15 +188,15 @@ const findPromptTransactions = ({
     order: [['time', limit ? 'DESC' : 'ASC']],
   }) as Promise<PromptTransaction[]>;
 
-const findCandidates = ({ budget, now }: { budget: Budgets; now: Date }) => {
-  const budgetId = connection.sequelize.escape(budget.id);
+const findCandidates = ({ budget, now }: { budget: Trackers; now: Date }) => {
+  const trackerId = connection.sequelize.escape(budget.id);
   return findPromptTransactions({
     ownerId: budget.userId,
     where: {
       time: { [Op.between]: [subDays(budget.startDate!, budget.aiPreWindowDays), budget.endDate ?? now] },
       id: {
         [Op.notIn]: literal(
-          `(SELECT "transactionId" FROM "BudgetTransactions" WHERE "budgetId" = ${budgetId} UNION ALL SELECT "transactionId" FROM "TrackerSuggestions" WHERE "budgetId" = ${budgetId})`,
+          `(SELECT "transactionId" FROM "TrackerTransactions" WHERE "trackerId" = ${trackerId} UNION ALL SELECT "transactionId" FROM "TrackerSuggestions" WHERE "trackerId" = ${trackerId})`,
         ),
       },
       ...(budget.aiScannedUntil && { updatedAt: { [Op.gt]: budget.aiScannedUntil } }),
@@ -204,10 +204,10 @@ const findCandidates = ({ budget, now }: { budget: Budgets; now: Date }) => {
   });
 };
 
-const loadExamples = async ({ budget }: { budget: Budgets }) => {
+const loadExamples = async ({ budget }: { budget: Trackers }) => {
   const rejectedIds = (
     await TrackerSuggestions.findAll({
-      where: { budgetId: budget.id, status: TRACKER_SUGGESTION_STATUS.rejected },
+      where: { trackerId: budget.id, status: TRACKER_SUGGESTION_STATUS.rejected },
       order: [['resolvedAt', 'DESC']],
       limit: MAX_REJECTED_EXAMPLES,
       attributes: ['transactionId'],
@@ -220,7 +220,7 @@ const loadExamples = async ({ budget }: { budget: Budgets }) => {
       where: {
         id: {
           [Op.in]: literal(
-            `(SELECT "transactionId" FROM "BudgetTransactions" WHERE "budgetId" = ${connection.sequelize.escape(budget.id)})`,
+            `(SELECT "transactionId" FROM "TrackerTransactions" WHERE "trackerId" = ${connection.sequelize.escape(budget.id)})`,
           ),
         },
       },
@@ -241,7 +241,7 @@ const scoreBatch = async ({
   examples,
   batch,
 }: {
-  budget: Budgets;
+  budget: Trackers;
   aiClient: AIClientResult;
   systemPrompt: string;
   examples: Awaited<ReturnType<typeof loadExamples>>;
@@ -292,15 +292,15 @@ const scoreBatch = async ({
 const applyMatches = withTransaction(async ({ budgetId, matches }: { budgetId: string; matches: ScoredMatch[] }) => {
   const autoLinked = matches.filter((match) => match.score >= TRACKER_AI_AUTO_LINK_SCORE);
   if (autoLinked.length) {
-    await BudgetTransactions.bulkCreate(
-      autoLinked.map(({ transactionId }) => ({ budgetId, transactionId, metadata: null })),
+    await TrackerTransactions.bulkCreate(
+      autoLinked.map(({ transactionId }) => ({ trackerId: budgetId, transactionId, metadata: null })),
       { ignoreDuplicates: true },
     );
   }
   if (matches.length) {
     await TrackerSuggestions.bulkCreate(
       matches.map(({ transactionId, score, reason }) => ({
-        budgetId,
+        trackerId: budgetId,
         transactionId,
         score,
         reason,
@@ -320,7 +320,7 @@ const notifyMatches = async ({
   linkedCount,
   suggestedCount,
 }: {
-  budget: Budgets;
+  budget: Trackers;
   linkedCount: number;
   suggestedCount: number;
 }) => {
@@ -347,7 +347,7 @@ export const runTrackerScan = async ({
 }: {
   budgetId: string;
 }): Promise<{ linkedCount: number; suggestedCount: number } | null> => {
-  const budget = await Budgets.findByPk(budgetId);
+  const budget = await Trackers.findByPk(budgetId);
   if (!budget || !isTrackerScannable({ budget, now: new Date() })) return null;
 
   const aiClient = await createAIClient({ userId: budget.userId, feature: AI_FEATURE.trackerMatching });
@@ -399,7 +399,7 @@ export const runTrackerScan = async ({
   }
 
   // An edit to the AI settings mid-scan reset the cursor; the stale scan must not overwrite it.
-  await Budgets.update(
+  await Trackers.update(
     { ...(!allowanceReached && { aiScannedUntil: scanStartedAt }), aiLastScannedAt: new Date() },
     {
       where: {

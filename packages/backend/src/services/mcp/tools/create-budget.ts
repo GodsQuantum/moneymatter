@@ -10,6 +10,7 @@ import { Money } from '@common/types/money';
 import { smartTrackingFieldsShape } from '@controllers/budgets/smart-tracking-fields.schema';
 import { trackMcpToolUsed } from '@js/utils/posthog';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { serializeBudget } from '@root/serializers/budgets.serializer';
 import { createBudget } from '@services/budgets/create-budget';
 import { z } from 'zod';
 
@@ -77,7 +78,7 @@ export function registerCreateBudget(server: McpServer) {
         aiPreWindowDays: args.aiPreWindowDays,
       });
 
-      return jsonContent({ data: budget });
+      return jsonContent({ data: serializeBudget(budget) });
     },
   );
 }

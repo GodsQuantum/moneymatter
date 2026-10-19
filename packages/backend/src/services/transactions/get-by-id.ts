@@ -2,8 +2,8 @@ import { ACCESS_SOURCES, RESOURCE_TYPES, SHARE_PERMISSIONS, SharePermission } fr
 import { t } from '@i18n/index';
 import { ForbiddenError, NotFoundError } from '@js/errors';
 import Accounts from '@models/accounts.model';
-import BudgetTransactions from '@models/budget-transactions.model';
 import Tags from '@models/tags.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
 import TransactionSplits from '@models/transaction-splits.model';
 import { findOneTransaction } from '@models/transactions-query';
 import * as Transactions from '@models/transactions.model';
@@ -144,14 +144,14 @@ export const getTransactionById = withTransaction(
     const accessibleBudgetIds = await getAccessibleBudgetIdsForUser({ userId });
     if (!accessibleBudgetIds.length) return null;
 
-    const budgetAttachment = (await BudgetTransactions.findOne({
+    const budgetAttachment = (await TrackerTransactions.findOne({
       where: {
         transactionId: id,
-        budgetId: { [Op.in]: accessibleBudgetIds },
+        trackerId: { [Op.in]: accessibleBudgetIds },
       },
-      attributes: ['budgetId'],
+      attributes: ['trackerId'],
       raw: true,
-    })) as { budgetId: string } | null;
+    })) as { trackerId: string } | null;
     if (!budgetAttachment) return null;
 
     const budgetVisibilityAccess: GrantedAccessResult = {

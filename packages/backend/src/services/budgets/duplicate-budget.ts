@@ -2,11 +2,11 @@ import { BUDGET_STATUSES, SHARE_PERMISSIONS } from '@bt/shared/types';
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
 import { ForbiddenError } from '@js/errors';
-import BudgetCategories from '@models/budget-categories.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
+import TrackerCategories from '@models/tracker-categories.model';
 import TrackerLineCategories from '@models/tracker-line-categories.model';
 import TrackerLines from '@models/tracker-lines.model';
+import Trackers from '@models/trackers.model';
 import { LOGO_FIELD_KEYS } from '@services/brand-logos/apply-manual-logo-patch';
 import { getBudgetById } from '@services/budget.service';
 import { withTransaction } from '@services/common/with-transaction';
@@ -33,14 +33,14 @@ export const duplicateBudget = withTransaction(async ({ userId, id }: { userId: 
   }
 
   const source = await findOrThrowNotFound({
-    query: Budgets.findOne({
+    query: Trackers.findOne({
       where: { id, userId },
       include: [includeCategoryIds(), { model: TrackerLines, as: 'lines', include: [includeCategoryIds()] }],
     }),
     message: t({ key: 'budgets.budgetNotFound' }),
   });
 
-  const copy = await Budgets.create({
+  const copy = await Trackers.create({
     name: `${source.name.slice(0, MAX_NAME_LENGTH - COPY_SUFFIX.length)}${COPY_SUFFIX}`,
     userId,
     status: BUDGET_STATUSES.active,
@@ -57,14 +57,14 @@ export const duplicateBudget = withTransaction(async ({ userId, id }: { userId: 
     logoImageId: await copyLogoImageIfPresent({ id: source.logoImageId }),
   });
 
-  await BudgetCategories.bulkCreate(
-    source.categories.map((category) => ({ budgetId: copy.id, categoryId: category.id })),
+  await TrackerCategories.bulkCreate(
+    source.categories.map((category) => ({ trackerId: copy.id, categoryId: category.id })),
   );
 
   const sourceLines = source.lines ?? [];
   const copiedLines = await TrackerLines.bulkCreate(
     sourceLines.map((line) => ({
-      budgetId: copy.id,
+      trackerId: copy.id,
       name: line.name,
       limitAmount: line.limitAmount,
       position: line.position,

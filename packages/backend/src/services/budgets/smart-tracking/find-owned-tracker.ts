@@ -1,7 +1,7 @@
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
 import { NotFoundError } from '@js/errors';
-import Budgets from '@models/budget.model';
+import Trackers from '@models/trackers.model';
 
 import { authorizeBudgetRead } from '../authorize-budget-access';
 
@@ -11,7 +11,7 @@ export const findOwnedTracker = async ({ userId, budgetId }: { userId: number; b
   if (!isOwner) throw new NotFoundError({ message: t({ key: 'budgets.budgetNotFound' }) });
 
   return findOrThrowNotFound({
-    query: Budgets.findOne({ where: { id: budgetId, userId } }),
+    query: Trackers.findOne({ where: { id: budgetId, userId } }),
     message: t({ key: 'budgets.budgetNotFound' }),
   });
 };

@@ -4,7 +4,7 @@ import type { RecordId } from './record-id';
 import type { ResourceShareInfo } from './sharing';
 import type { TransactionModel } from './transactions';
 
-// Everything in this file belongs to the user-facing "Trackers" (`Budgets` table).
+// Everything in this file belongs to the user-facing "Trackers" (`Trackers` table).
 // The user-facing "Budget" is typed in budget-plans.ts.
 export enum BUDGET_STATUSES {
   active = 'active',

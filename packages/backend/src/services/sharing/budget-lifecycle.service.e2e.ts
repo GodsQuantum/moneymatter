@@ -1,7 +1,7 @@
 /**
  * Budget sharing lifecycle — cleanup sweeps on revoke, leave, and budget deletion.
  *
- * Verifies that recipient-attached BudgetTransactions rows are swept when access
+ * Verifies that recipient-attached TrackerTransactions rows are swept when access
  * is removed, and that budget deletion cleans up ResourceShares + ShareInvitations
  * while leaving the recipient's underlying Transactions intact.
  *
@@ -10,9 +10,9 @@
 
 import { RESOURCE_TYPES, SHARE_INVITATION_STATUSES, SHARE_PERMISSIONS } from '@bt/shared/types';
 import { describe, expect, it } from '@jest/globals';
-import BudgetTransactions from '@models/budget-transactions.model';
 import ResourceShares from '@models/resource-shares.model';
 import ShareInvitations from '@models/share-invitations.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
 import Transactions from '@models/transactions.model';
 import * as helpers from '@tests/helpers';
 
@@ -116,7 +116,7 @@ async function recipientAttachesTxs({
 
 describe('Budget sharing lifecycle', () => {
   describe('Revoke share', () => {
-    it("sweeps recipient's BudgetTransactions rows; owner's rows and recipient's Transactions rows untouched", async () => {
+    it("sweeps recipient's TrackerTransactions rows; owner's rows and recipient's Transactions rows untouched", async () => {
       const account = await helpers.createAccount({ raw: true });
       const budget = await helpers.createCustomBudget({ name: 'Revoke sweep', raw: true });
 
@@ -142,8 +142,8 @@ describe('Budget sharing lifecycle', () => {
       });
 
       // Confirm rows exist before revoke
-      const beforeRecipientRows = await BudgetTransactions.findAll({
-        where: { budgetId: budget.id, transactionId: recipientTxIds },
+      const beforeRecipientRows = await TrackerTransactions.findAll({
+        where: { trackerId: budget.id, transactionId: recipientTxIds },
       });
       expect(beforeRecipientRows).toHaveLength(2);
 
@@ -166,15 +166,15 @@ describe('Budget sharing lifecycle', () => {
       });
       expect(shareRow).toBeNull();
 
-      // Recipient's BudgetTransactions rows swept
-      const afterRecipientRows = await BudgetTransactions.findAll({
-        where: { budgetId: budget.id, transactionId: recipientTxIds },
+      // Recipient's TrackerTransactions rows swept
+      const afterRecipientRows = await TrackerTransactions.findAll({
+        where: { trackerId: budget.id, transactionId: recipientTxIds },
       });
       expect(afterRecipientRows).toHaveLength(0);
 
-      // Owner's BudgetTransactions row still present
-      const ownerRow = await BudgetTransactions.findOne({
-        where: { budgetId: budget.id, transactionId: ownerTx!.id },
+      // Owner's TrackerTransactions row still present
+      const ownerRow = await TrackerTransactions.findOne({
+        where: { trackerId: budget.id, transactionId: ownerTx!.id },
       });
       expect(ownerRow).not.toBeNull();
 
@@ -187,7 +187,7 @@ describe('Budget sharing lifecycle', () => {
   });
 
   describe('Leave share', () => {
-    it("sweeps recipient's BudgetTransactions rows when recipient leaves", async () => {
+    it("sweeps recipient's TrackerTransactions rows when recipient leaves", async () => {
       const budget = await helpers.createCustomBudget({ name: 'Leave sweep', raw: true });
 
       const recipient = await provisionRecipient();
@@ -222,9 +222,9 @@ describe('Budget sharing lifecycle', () => {
       });
       expect(shareRow).toBeNull();
 
-      // Recipient's BudgetTransactions rows swept
-      const afterRows = await BudgetTransactions.findAll({
-        where: { budgetId: budget.id, transactionId: recipientTxIds },
+      // Recipient's TrackerTransactions rows swept
+      const afterRows = await TrackerTransactions.findAll({
+        where: { trackerId: budget.id, transactionId: recipientTxIds },
       });
       expect(afterRows).toHaveLength(0);
 
@@ -237,7 +237,7 @@ describe('Budget sharing lifecycle', () => {
   });
 
   describe('Budget deletion', () => {
-    it('deletes budget, sweeps ResourceShares, revokes pending invitation, cascades BudgetTransactions', async () => {
+    it('deletes budget, sweeps ResourceShares, revokes pending invitation, cascades TrackerTransactions', async () => {
       const budget = await helpers.createCustomBudget({ name: 'Delete sweep single', raw: true });
 
       // 1 accepted recipient
@@ -285,9 +285,9 @@ describe('Budget sharing lifecycle', () => {
       expect(invitationAfter!.status).toBe(SHARE_INVITATION_STATUSES.revoked);
       expect(invitationAfter!.revokedAt).not.toBeNull();
 
-      // BudgetTransactions rows gone (cascade)
-      const btRows = await BudgetTransactions.findAll({
-        where: { budgetId: budget.id },
+      // TrackerTransactions rows gone (cascade)
+      const btRows = await TrackerTransactions.findAll({
+        where: { trackerId: budget.id },
       });
       expect(btRows).toHaveLength(0);
 
@@ -340,8 +340,8 @@ describe('Budget sharing lifecycle', () => {
       expect(shareA).toBeNull();
       expect(shareB).toBeNull();
 
-      // All BudgetTransactions rows gone
-      const btRows = await BudgetTransactions.findAll({ where: { budgetId: budget.id } });
+      // All TrackerTransactions rows gone
+      const btRows = await TrackerTransactions.findAll({ where: { trackerId: budget.id } });
       expect(btRows).toHaveLength(0);
 
       // Both recipients' underlying Transactions survive

@@ -3,9 +3,9 @@ import { BUDGET_TYPES, TRANSACTION_TRANSFER_NATURE, TRANSACTION_TYPES } from '@b
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
 import Accounts from '@models/accounts.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
 import Payees from '@models/payees.model';
+import Trackers from '@models/trackers.model';
 import TransactionSplits from '@models/transaction-splits.model';
 import { PlannedPolicy, transactionsInclude } from '@models/transactions-query';
 import * as Transactions from '@models/transactions.model';
@@ -502,7 +502,7 @@ const buildRefundAdjustments = ({
 };
 
 /**
- * Manual budget: fetch transactions via the BudgetTransactions junction (no userId
+ * Manual budget: fetch transactions via the TrackerTransactions junction (no userId
  * filter, so recipient contributions count) and group by root category.
  *
  * Shared-budget category breakdown merges by `Categories.key`: a recipient's seeded
@@ -521,7 +521,7 @@ const getManualBudgetSpendingStats = async ({
   callerUserId: number;
 }): Promise<SpendingStatsResponse> => {
   const budgetDetails = await findOrThrowNotFound({
-    query: Budgets.findOne({ where: { id: budgetId, userId: ownerUserId } }),
+    query: Trackers.findOne({ where: { id: budgetId, userId: ownerUserId } }),
     message: t({ key: 'budgets.budgetNotFound' }),
   });
 
@@ -635,7 +635,7 @@ const getCategoryBudgetSpendingStats = async ({
   isOwner: boolean;
 }): Promise<SpendingStatsResponse> => {
   const budgetDetails = await findOrThrowNotFound({
-    query: Budgets.findOne({
+    query: Trackers.findOne({
       where: { id: budgetId, userId },
       include: [{ model: Categories, as: 'categories', attributes: ['id'] }],
     }),
@@ -791,7 +791,7 @@ export const getBudgetSpendingStats = async ({
   const { ownerUserId, isOwner } = await authorizeBudgetRead({ userId, budgetId });
 
   const budgetDetails = await findOrThrowNotFound({
-    query: Budgets.findOne({ where: { id: budgetId, userId: ownerUserId }, attributes: ['type'] }),
+    query: Trackers.findOne({ where: { id: budgetId, userId: ownerUserId }, attributes: ['type'] }),
     message: t({ key: 'budgets.budgetNotFound' }),
   });
 

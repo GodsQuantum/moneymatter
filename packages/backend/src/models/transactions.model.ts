@@ -24,13 +24,13 @@ import { removeUndefinedKeys } from '@js/helpers';
 import { logger } from '@js/utils/logger';
 import Accounts, { isBankLinkedAccount } from '@models/accounts.model';
 import Balances from '@models/balances.model';
-import BudgetTransactions from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
 import Currencies from '@models/currencies.model';
 import LoanDetails from '@models/loan-details.model';
 import Payees from '@models/payees.model';
 import Tags from '@models/tags.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import TransactionGroupItems from '@models/transaction-group-items.model';
 import TransactionGroups, { dissolveUndersizedGroups } from '@models/transaction-groups.model';
 import TransactionSplits from '@models/transaction-splits.model';
@@ -206,12 +206,12 @@ export default class Transactions extends Model {
   @Column({ type: DataType.JSONB, allowNull: true, defaultValue: null })
   creatorSnapshot!: TransactionCreatorSnapshot | null;
 
-  @BelongsToMany(() => Budgets, {
-    through: { model: () => BudgetTransactions, unique: false },
+  @BelongsToMany(() => Trackers, {
+    through: { model: () => TrackerTransactions, unique: false },
     foreignKey: 'transactionId',
-    otherKey: 'budgetId',
+    otherKey: 'trackerId',
   })
-  budgets!: Budgets[];
+  budgets!: Trackers[];
 
   @BelongsToMany(() => Tags, {
     through: { model: () => TransactionTags, unique: false },
@@ -1106,16 +1106,16 @@ export const findWithFilters = async ({
       buildNoneOrAnyJunctionCondition({
         ids: budgetIds!.filter((id) => id !== BLANK_FILTER_VALUE),
         paramName: 'budgetIds',
-        junctionTable: 'BudgetTransactions',
+        junctionTable: 'TrackerTransactions',
         alias: 'bt',
-        column: 'budgetId',
+        column: 'trackerId',
       }),
     );
   } else if (budgetIds?.length) {
-    const budgetTransactionIds = await BudgetTransactions.findAll({
+    const budgetTransactionIds = await TrackerTransactions.findAll({
       attributes: ['transactionId'],
       where: {
-        budgetId: { [Op.in]: budgetIds },
+        trackerId: { [Op.in]: budgetIds },
       },
       raw: true,
     }).then((results) => results.map((r) => r.transactionId));
@@ -1127,10 +1127,10 @@ export const findWithFilters = async ({
   }
 
   if (excludedBudgetIds?.length) {
-    const excludedTransactionIds = await BudgetTransactions.findAll({
+    const excludedTransactionIds = await TrackerTransactions.findAll({
       attributes: ['transactionId'],
       where: {
-        budgetId: {
+        trackerId: {
           [Op.in]: excludedBudgetIds,
         },
       },

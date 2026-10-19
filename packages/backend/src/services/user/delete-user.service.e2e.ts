@@ -10,12 +10,12 @@ import { API_RESPONSE_STATUS } from '@bt/shared/types/api';
 import { authPool } from '@config/auth';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import Accounts from '@models/accounts.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
 import { connection } from '@models/index';
 import Portfolios from '@models/investments/portfolios.model';
 import Notifications from '@models/notifications.model';
 import ResourceShares from '@models/resource-shares.model';
+import Trackers from '@models/trackers.model';
 import Transactions from '@models/transactions.model';
 import UserSettings from '@models/user-settings.model';
 import UsersCurrencies from '@models/users-currencies.model';
@@ -165,7 +165,7 @@ describe('User deletion (DELETE /user/delete)', () => {
       where: { id: [category1.id, category2.id, childCategory.id] },
     });
     const transactionsAfter = await Transactions.findAll({ where: { accountId: [account1.id, account2.id] } });
-    const budgetsAfter = await Budgets.findAll({ where: { id: budget.id } });
+    const budgetsAfter = await Trackers.findAll({ where: { id: budget.id } });
     const portfoliosAfter = await Portfolios.findAll({ where: { id: portfolio.id } });
     const currenciesAfter = await UsersCurrencies.findAll({});
     const settingsAfter = await UserSettings.findAll({ where: {} });

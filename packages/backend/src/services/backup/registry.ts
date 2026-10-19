@@ -75,6 +75,20 @@ export interface BackupTableDef<Name extends string = BackupFileName> {
   requireSeededCurrency?: boolean;
   /** Drop a row on restore that breaks an app-level rule the DB constraints don't cover. */
   isValidRow?: (params: { row: Record<string, unknown> }) => boolean;
+  /** Model attribute → the key it carries in the archive, where the two differ. */
+  fileColumns?: Readonly<Record<string, string>>;
+}
+
+const TRACKER_FILE_COLUMNS = { trackerId: 'budgetId' } as const;
+
+export function renameRowKeys({
+  rows,
+  renames,
+}: {
+  rows: Record<string, unknown>[];
+  renames: Readonly<Record<string, string>>;
+}): Record<string, unknown>[] {
+  return rows.map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [renames[key] ?? key, value])));
 }
 
 /**
@@ -290,7 +304,7 @@ const TABLE_DEFS = [
   },
   {
     fileName: 'budgets',
-    model: models.Budgets,
+    model: models.Trackers,
     tier: 3,
     scope: { strategy: 'userColumn', column: 'userId' },
     restoreMode: 'insert',
@@ -403,7 +417,8 @@ const TABLE_DEFS = [
     fileName: 'tracker-lines',
     model: models.TrackerLines,
     tier: 4,
-    scope: { strategy: 'viaParent', fk: 'budgetId', parent: 'budgets' },
+    scope: { strategy: 'viaParent', fk: 'trackerId', parent: 'budgets' },
+    fileColumns: TRACKER_FILE_COLUMNS,
     restoreMode: 'insert',
   },
 
@@ -431,16 +446,18 @@ const TABLE_DEFS = [
   },
   {
     fileName: 'budget-transactions',
-    model: models.BudgetTransactions,
+    model: models.TrackerTransactions,
     tier: 5,
-    scope: { strategy: 'viaParent', fk: 'budgetId', parent: 'budgets' },
+    scope: { strategy: 'viaParent', fk: 'trackerId', parent: 'budgets' },
+    fileColumns: TRACKER_FILE_COLUMNS,
     restoreMode: 'insert',
   },
   {
     fileName: 'budget-categories',
-    model: models.BudgetCategories,
+    model: models.TrackerCategories,
     tier: 5,
-    scope: { strategy: 'viaParent', fk: 'budgetId', parent: 'budgets' },
+    scope: { strategy: 'viaParent', fk: 'trackerId', parent: 'budgets' },
+    fileColumns: TRACKER_FILE_COLUMNS,
     restoreMode: 'insert',
   },
   {
@@ -510,7 +527,8 @@ const TABLE_DEFS = [
     fileName: 'tracker-suggestions',
     model: models.TrackerSuggestions,
     tier: 5,
-    scope: { strategy: 'viaParent', fk: 'budgetId', parent: 'budgets' },
+    scope: { strategy: 'viaParent', fk: 'trackerId', parent: 'budgets' },
+    fileColumns: TRACKER_FILE_COLUMNS,
     restoreMode: 'insert',
   },
 

@@ -33,14 +33,14 @@ export const rejectUnlinkedTransactions = async ({
   if (!transactionIds.length) return;
 
   const resolvedAt = new Date();
-  const existing = await TrackerSuggestions.findAll({ where: { budgetId, transactionId: transactionIds } });
+  const existing = await TrackerSuggestions.findAll({ where: { trackerId: budgetId, transactionId: transactionIds } });
   await TrackerSuggestions.update(
     { status: TRACKER_SUGGESTION_STATUS.rejected, resolvedAt },
-    { where: { budgetId, transactionId: transactionIds } },
+    { where: { trackerId: budgetId, transactionId: transactionIds } },
   );
   await TrackerSuggestions.bulkCreate(
     transactionIds.map((transactionId) => ({
-      budgetId,
+      trackerId: budgetId,
       transactionId,
       score: 0,
       reason: '',
@@ -65,7 +65,7 @@ export const acceptLinkedTransactions = async ({
     { status: TRACKER_SUGGESTION_STATUS.accepted, resolvedAt: new Date() },
     {
       where: {
-        budgetId,
+        trackerId: budgetId,
         transactionId: transactionIds,
         status: [TRACKER_SUGGESTION_STATUS.pending, TRACKER_SUGGESTION_STATUS.rejected],
       },

@@ -2,7 +2,7 @@ import { TRANSACTION_TYPES, asDecimal } from '@bt/shared/types';
 import { NONEXISTENT_ID, generateRandomRecordId } from '@common/lib/record-id-helpers';
 import { describe, expect, it } from '@jest/globals';
 import { ERROR_CODES } from '@js/errors';
-import BudgetTransactions from '@models/budget-transactions.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
 import * as helpers from '@tests/helpers';
 
 const seedBudgetWithAttachedTransaction = async () => {
@@ -189,9 +189,9 @@ describe('Budget Transactions', () => {
     it('successfully removes transactions from a budget', async () => {
       const { budget, transaction } = await seedBudgetWithAttachedTransaction();
 
-      const beforeRemoval = await BudgetTransactions.findOne({
+      const beforeRemoval = await TrackerTransactions.findOne({
         where: {
-          budgetId: budget.id,
+          trackerId: budget.id,
           transactionId: transaction.id,
         },
       });
@@ -204,9 +204,9 @@ describe('Budget Transactions', () => {
 
       expect(response.statusCode).toEqual(200);
 
-      const afterRemoval = await BudgetTransactions.findOne({
+      const afterRemoval = await TrackerTransactions.findOne({
         where: {
-          budgetId: budget.id,
+          trackerId: budget.id,
           transactionId: transaction.id,
         },
       });

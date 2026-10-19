@@ -657,7 +657,7 @@ describe('Demo Mode', () => {
         endDate: string | null;
         categories: unknown[];
       }[]) {
-        // `category` is what writes the BudgetCategories rows the stats read; a
+        // `category` is what writes the TrackerCategories rows the stats read; a
         // `manual` budget with no linked transactions would report zero spend.
         expect(budget.type).toBe(BUDGET_TYPES.category);
         expect(budget.startDate).not.toBeNull();

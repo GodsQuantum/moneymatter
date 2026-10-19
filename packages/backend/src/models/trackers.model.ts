@@ -13,18 +13,15 @@ import Transactions from '@models/transactions.model';
 import Users from '@models/users.model';
 import { Table, Column, Model, ForeignKey, DataType, BelongsToMany, HasMany } from 'sequelize-typescript';
 
-import BudgetCategories from './budget-categories.model';
-import BudgetTransactions from './budget-transactions.model';
+import TrackerCategories from './tracker-categories.model';
 import TrackerLines from './tracker-lines.model';
+import TrackerTransactions from './tracker-transactions.model';
 
-/**
- * Shown to users as a "Tracker": watches spending over a date range, by linked
- * categories or hand-picked transactions. The user-facing "Budget" is `BudgetPlans`.
- */
+/** Watches spending over a date range, by linked categories or hand-picked transactions. */
 @Table({
   timestamps: false,
 })
-export default class Budgets extends Model {
+export default class Trackers extends Model {
   @Column(IdColumn())
   declare id: RecordId;
 
@@ -92,19 +89,19 @@ export default class Budgets extends Model {
   userId!: number;
 
   @BelongsToMany(() => Transactions, {
-    through: { model: () => BudgetTransactions, unique: false },
-    foreignKey: 'budgetId',
+    through: { model: () => TrackerTransactions, unique: false },
+    foreignKey: 'trackerId',
     otherKey: 'transactionId',
   })
   transactions!: number[];
 
   @BelongsToMany(() => Categories, {
-    through: { model: () => BudgetCategories, unique: false },
-    foreignKey: 'budgetId',
+    through: { model: () => TrackerCategories, unique: false },
+    foreignKey: 'trackerId',
     otherKey: 'categoryId',
   })
   categories!: Categories[];
 
-  @HasMany(() => TrackerLines, { foreignKey: 'budgetId', onDelete: 'CASCADE' })
+  @HasMany(() => TrackerLines, { foreignKey: 'trackerId', onDelete: 'CASCADE' })
   lines?: TrackerLines[];
 }

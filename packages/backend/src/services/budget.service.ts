@@ -1,7 +1,7 @@
 import { BUDGET_STATUSES, BudgetModel } from '@bt/shared/types';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
 import TrackerLines from '@models/tracker-lines.model';
+import Trackers from '@models/trackers.model';
 import Users from '@models/users.model';
 import { Op } from 'sequelize';
 
@@ -13,7 +13,7 @@ import {
   getSharedBudgetsForUser,
 } from './sharing/get-shared-budgets.service';
 
-type BudgetWithCategories = Budgets & {
+type BudgetWithCategories = Trackers & {
   categories: Pick<Categories, 'id' | 'name' | 'color' | 'parentId'>[];
 };
 
@@ -59,7 +59,7 @@ export const getBudgets = withTransaction(
   async ({ userId, statuses }: { userId: number; statuses?: BUDGET_STATUSES[] }): Promise<BudgetWithShareContext[]> => {
     const statusWhere = filterByStatus({ statuses });
     const [ownedBudgets, sharedBudgets, ownerUser] = await Promise.all([
-      Budgets.findAll({
+      Trackers.findAll({
         where: { userId, ...statusWhere },
         include: [includeCategories, includeLines],
       }),
@@ -92,7 +92,7 @@ export const getBudgetById = withTransaction(
     userId: BudgetModel['userId'];
     id: BudgetModel['id'];
   }): Promise<BudgetWithShareContext | null> => {
-    const owned = await Budgets.findOne({
+    const owned = await Trackers.findOne({
       where: { userId, id },
       include: [includeCategories, includeLines],
     });

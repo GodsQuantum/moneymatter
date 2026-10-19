@@ -13,8 +13,8 @@ import {
 import { ConflictError, NotFoundError, ValidationError } from '@js/errors';
 import { logger } from '@js/utils/logger';
 import Accounts from '@models/accounts.model';
-import Budgets from '@models/budget.model';
 import ShareInvitations from '@models/share-invitations.model';
+import Trackers from '@models/trackers.model';
 import { getBaseCurrency } from '@models/users-currencies.model';
 import Users from '@models/users.model';
 import { withTransaction } from '@services/common/with-transaction';
@@ -78,7 +78,7 @@ const resolveOwnedResource = async ({
     };
   }
   if (resourceType === RESOURCE_TYPES.budget) {
-    const budget = await Budgets.findOne({ where: { id: resourceId } });
+    const budget = await Trackers.findOne({ where: { id: resourceId } });
     if (!budget) {
       throw new NotFoundError({ message: 'Tracker not found' });
     }

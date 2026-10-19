@@ -7,9 +7,9 @@ import {
   type TrackerAiPreWindowDays,
 } from '@bt/shared/types';
 import { Money } from '@common/types/money';
-import BudgetCategories from '@models/budget-categories.model';
-import BudgetTransactions from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
+import TrackerCategories from '@models/tracker-categories.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import { findTransactions } from '@models/transactions-query';
 import { applyLogoWrite } from '@services/brand-logos';
 import { includeCategories } from '@services/budget.service';
@@ -71,7 +71,7 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
     },
   });
 
-  const budget = await Budgets.create({
+  const budget = await Trackers.create({
     name: payload.name,
     userId: payload.userId,
     status: payload.status || BUDGET_STATUSES.active,
@@ -93,7 +93,7 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
     await runAfterCommit({ fn: () => enqueueTrackerScan({ budgetId: budget.id }) });
   }
 
-  // For category-based budgets, create BudgetCategories entries
+  // For category-based budgets, create TrackerCategories entries
   if (categoryIds.length) {
     // Expand parent categories to include children
     const expandedCategoryIds = await expandCategoryIds({
@@ -102,9 +102,9 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
     });
 
     if (expandedCategoryIds.length) {
-      await BudgetCategories.bulkCreate(
+      await TrackerCategories.bulkCreate(
         expandedCategoryIds.map((categoryId) => ({
-          budgetId: budget.id,
+          trackerId: budget.id,
           categoryId,
         })),
       );
@@ -129,9 +129,9 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
 
     if (transactions.length) {
       const transactionIds = transactions.map((tx) => tx.id);
-      await BudgetTransactions.bulkCreate(
+      await TrackerTransactions.bulkCreate(
         transactionIds.map((transactionId) => ({
-          budgetId: budget.id,
+          trackerId: budget.id,
           transactionId,
         })),
       );
@@ -139,7 +139,7 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
   }
 
   // Reload budget with categories for category-based budgets
-  const reloadedBudget = await Budgets.findByPk(budget.id, {
+  const reloadedBudget = await Trackers.findByPk(budget.id, {
     attributes: { exclude: ['userId'] },
     include: budgetType === BUDGET_TYPES.category ? [includeCategories] : [],
   });

@@ -1,4 +1,4 @@
-import Budgets from '@models/budget.model';
+import Trackers from '@models/trackers.model';
 import Users from '@models/users.model';
 import type { Includeable, WhereOptions } from 'sequelize';
 
@@ -38,7 +38,7 @@ export const getSharedBudgetsForUser = ({
   userId: number;
   where?: WhereOptions;
   include?: Includeable[];
-}): Promise<Array<Budgets & { _shareContext: BudgetShareContext }>> =>
+}): Promise<Array<Trackers & { _shareContext: BudgetShareContext }>> =>
   loadSharedFor({
     userId,
     shareable: budgetShareable,
@@ -59,7 +59,7 @@ export const getSharedBudgetById = ({
   userId: number;
   id: string;
   include?: Includeable[];
-}): Promise<(Budgets & { _shareContext: BudgetShareContext }) | null> =>
+}): Promise<(Trackers & { _shareContext: BudgetShareContext }) | null> =>
   loadSharedByIdFor({
     userId,
     shareable: budgetShareable,

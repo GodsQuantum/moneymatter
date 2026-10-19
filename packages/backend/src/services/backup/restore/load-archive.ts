@@ -4,10 +4,18 @@ import { ValidationError } from '@js/errors';
 import JSZip from 'jszip';
 import isPlainObject from 'lodash/isPlainObject';
 
-import { BACKUP_TABLES, type BackupFileName } from '../registry';
+import { BACKUP_TABLES, renameRowKeys, type BackupFileName } from '../registry';
 import { sha256Hex } from '../sha256';
 
 const BACKUP_FILE_NAMES = BACKUP_TABLES.map((t) => t.fileName);
+
+const ATTRS_BY_FILE_COLUMN = new Map(
+  BACKUP_TABLES.flatMap((def) =>
+    def.fileColumns
+      ? [[def.fileName, Object.fromEntries(Object.entries(def.fileColumns).map(([attr, key]) => [key, attr]))] as const]
+      : [],
+  ),
+);
 
 type Row = Record<string, unknown>;
 
@@ -235,7 +243,9 @@ export async function loadBackupArchive({
       user = value as Row;
       continue;
     }
-    data.set(name, assertRowArray({ value, path }));
+    const rows = assertRowArray({ value, path });
+    const renames = ATTRS_BY_FILE_COLUMN.get(name);
+    data.set(name, renames ? renameRowKeys({ rows, renames }) : rows);
   }
 
   const referenceByName = new Map<string, Row[]>();

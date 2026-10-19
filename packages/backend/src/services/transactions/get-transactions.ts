@@ -1,6 +1,6 @@
 import { BLANK_FILTER_VALUE } from '@bt/shared/types';
-import BudgetTransactions, { type BudgetTransactionMetadata } from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
+import TrackerTransactions, { type TrackerTransactionMetadata } from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import * as Transactions from '@models/transactions.model';
 import Users from '@models/users.model';
 import { getAccessibleAccountIdsForUser } from '@services/sharing/auth/get-accessible-account-ids.service';
@@ -162,17 +162,17 @@ const attachAddedByMetadata = async <T extends { id: string }>({
   // EVERY row, not just the recipient-attached ones — without that, a recipient
   // viewing an owner-attached row wouldn't know who put it in the budget.
   const [junctionRows, budgetRows] = await Promise.all([
-    BudgetTransactions.findAll({
+    TrackerTransactions.findAll({
       where: {
-        budgetId: { [Op.in]: budgetIds },
+        trackerId: { [Op.in]: budgetIds },
         transactionId: { [Op.in]: txIds },
       },
-      attributes: ['transactionId', 'budgetId', 'metadata'],
+      attributes: ['transactionId', 'trackerId', 'metadata'],
       raw: true,
     }) as unknown as Promise<
-      Array<{ transactionId: string; budgetId: string; metadata: BudgetTransactionMetadata | null }>
+      Array<{ transactionId: string; trackerId: string; metadata: TrackerTransactionMetadata | null }>
     >,
-    Budgets.findAll({
+    Trackers.findAll({
       where: { id: { [Op.in]: budgetIds } },
       attributes: ['id', 'userId'],
       raw: true,
@@ -193,7 +193,7 @@ const attachAddedByMetadata = async <T extends { id: string }>({
     if (typeof recipientId === 'number') {
       attacherUserIdByTx.set(row.transactionId, recipientId);
     } else {
-      const ownerId = budgetOwnerByBudgetId.get(row.budgetId);
+      const ownerId = budgetOwnerByBudgetId.get(row.trackerId);
       if (typeof ownerId === 'number') attacherUserIdByTx.set(row.transactionId, ownerId);
     }
   }

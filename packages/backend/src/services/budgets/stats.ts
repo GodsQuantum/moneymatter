@@ -2,9 +2,9 @@ import { BUDGET_TYPES, type RecordId, TRANSACTION_TRANSFER_NATURE, TRANSACTION_T
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
 import Accounts from '@models/accounts.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
 import TrackerLines from '@models/tracker-lines.model';
+import Trackers from '@models/trackers.model';
 import TransactionSplits from '@models/transaction-splits.model';
 import { PlannedPolicy, transactionsInclude } from '@models/transactions-query';
 import * as Transactions from '@models/transactions.model';
@@ -103,9 +103,9 @@ const buildCategoryCanonicalizer = async ({
 };
 
 /**
- * Calculate stats for manual budgets using BudgetTransactions junction table.
+ * Calculate stats for manual budgets using TrackerTransactions junction table.
  *
- * Junction-only scope on the transaction lookup: any row in `BudgetTransactions` for
+ * Junction-only scope on the transaction lookup: any row in `TrackerTransactions` for
  * this budget is counted, regardless of `Transactions.userId`. This is what lets a
  * `write` recipient's attached transactions contribute to the shared-budget totals
  * (income/expense/balance/utilization). The caller's authorization happens upstream
@@ -128,7 +128,7 @@ const getManualBudgetStats = async ({
   lines: TrackerLines[];
 }): Promise<StatsResponse> => {
   const budgetDetails = await findOrThrowNotFound({
-    query: Budgets.findByPk(budgetId),
+    query: Trackers.findByPk(budgetId),
     message: t({ key: 'budgets.budgetNotFound' }),
   });
 
@@ -175,7 +175,7 @@ const getCategoryBudgetStats = async ({
   lines: TrackerLines[];
 }): Promise<StatsResponse> => {
   const budgetDetails = await findOrThrowNotFound({
-    query: Budgets.findByPk(budgetId, {
+    query: Trackers.findByPk(budgetId, {
       include: [{ model: Categories, as: 'categories', attributes: ['id'] }],
     }),
     message: t({ key: 'budgets.budgetNotFound' }),
@@ -392,7 +392,7 @@ export const getBudgetStats = withTransaction(
     const { ownerUserId, isOwner } = await authorizeBudgetRead({ userId, budgetId });
 
     const budgetDetails = await findOrThrowNotFound({
-      query: Budgets.findByPk(budgetId, { attributes: ['id', 'type'], include: [includeLines] }),
+      query: Trackers.findByPk(budgetId, { attributes: ['id', 'type'], include: [includeLines] }),
       message: t({ key: 'budgets.budgetNotFound' }),
     });
     const lines = budgetDetails.lines ?? [];

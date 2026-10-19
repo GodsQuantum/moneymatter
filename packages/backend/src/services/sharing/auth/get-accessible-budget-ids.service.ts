@@ -1,6 +1,6 @@
 import { RESOURCE_TYPES } from '@bt/shared/types';
-import Budgets from '@models/budget.model';
 import ResourceShares from '@models/resource-shares.model';
+import Trackers from '@models/trackers.model';
 import { Op } from 'sequelize';
 
 /**
@@ -20,7 +20,7 @@ import { Op } from 'sequelize';
  */
 export const getAccessibleBudgetIdsForUser = async ({ userId }: { userId: number }): Promise<string[]> => {
   const [ownedRows, perResourceRows] = await Promise.all([
-    Budgets.findAll({
+    Trackers.findAll({
       where: { userId },
       attributes: ['id'],
       raw: true,

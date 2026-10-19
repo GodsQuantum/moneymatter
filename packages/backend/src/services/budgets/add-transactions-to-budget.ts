@@ -2,8 +2,8 @@ import { BUDGET_TYPES, SHARE_PERMISSIONS } from '@bt/shared/types';
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
 import { ValidationError } from '@js/errors';
-import BudgetTransactions, { BudgetTransactionMetadata } from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
+import TrackerTransactions, { TrackerTransactionMetadata } from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import { findTransactions } from '@models/transactions-query';
 import { withTransaction } from '@services/common/with-transaction';
 import { Op } from 'sequelize';
@@ -29,7 +29,7 @@ export const addTransactionsToBudget = withTransaction(async (payload: AddTransa
   });
 
   const budget = await findOrThrowNotFound({
-    query: Budgets.findOne({ where: { id: budgetId, userId: ownerUserId } }),
+    query: Trackers.findOne({ where: { id: budgetId, userId: ownerUserId } }),
     message: t({ key: 'budgets.budgetNotFound' }),
   });
 
@@ -61,14 +61,14 @@ export const addTransactionsToBudget = withTransaction(async (payload: AddTransa
   // Stamp `addedByUserId` on recipient-attached rows so the share-revocation sweep and
   // the detach-permission check can identify rows the recipient owns. Owner-attached
   // rows leave `metadata` null — interpreted as "owner-attached" downstream.
-  const metadata: BudgetTransactionMetadata | null = isOwner ? null : { addedByUserId: userId };
+  const metadata: TrackerTransactionMetadata | null = isOwner ? null : { addedByUserId: userId };
   const budgetTransactions = transactionIds.map((transactionId) => ({
-    budgetId,
+    trackerId: budgetId,
     transactionId,
     metadata,
   }));
 
-  await BudgetTransactions.bulkCreate(budgetTransactions);
+  await TrackerTransactions.bulkCreate(budgetTransactions);
   await acceptLinkedTransactions({ budgetId, transactionIds });
 
   return {

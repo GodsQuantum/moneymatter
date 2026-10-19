@@ -1,8 +1,8 @@
 import { type ResolveTrackerSuggestionsResponse, TRACKER_SUGGESTION_STATUS } from '@bt/shared/types';
 import { t } from '@i18n/index';
 import { ConflictError, NotFoundError } from '@js/errors';
-import BudgetTransactions from '@models/budget-transactions.model';
 import TrackerSuggestions from '@models/tracker-suggestions.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
 import { withTransaction } from '@services/common/with-transaction';
 
 import { addTransactionsToBudget } from '../add-transactions-to-budget';
@@ -31,7 +31,10 @@ export const resolveTrackerSuggestions = withTransaction(
   }): Promise<ResolveTrackerSuggestionsResponse> => {
     await findOwnedTracker({ userId, budgetId });
 
-    const suggestions = await TrackerSuggestions.findAll({ where: { id: suggestionIds, budgetId }, lock: true });
+    const suggestions = await TrackerSuggestions.findAll({
+      where: { id: suggestionIds, trackerId: budgetId },
+      lock: true,
+    });
     if (suggestions.length !== suggestionIds.length) {
       throw new NotFoundError({ message: t({ key: 'budgets.smartTracking.suggestionNotFound' }) });
     }
@@ -49,8 +52,8 @@ export const resolveTrackerSuggestions = withTransaction(
     const transactionIds = suggestions.map((suggestion) => suggestion.transactionId);
 
     if (action === 'accept') {
-      const linked = await BudgetTransactions.findAll({
-        where: { budgetId, transactionId: transactionIds },
+      const linked = await TrackerTransactions.findAll({
+        where: { trackerId: budgetId, transactionId: transactionIds },
         attributes: ['transactionId'],
       });
       const linkedIds = new Set(linked.map((row) => row.transactionId));
@@ -62,7 +65,8 @@ export const resolveTrackerSuggestions = withTransaction(
       const linkedIds = suggestions
         .filter((suggestion) => suggestion.status !== TRACKER_SUGGESTION_STATUS.pending)
         .map((suggestion) => suggestion.transactionId);
-      if (linkedIds.length) await BudgetTransactions.destroy({ where: { budgetId, transactionId: linkedIds } });
+      if (linkedIds.length)
+        await TrackerTransactions.destroy({ where: { trackerId: budgetId, transactionId: linkedIds } });
       await TrackerSuggestions.update(
         { status: TRACKER_SUGGESTION_STATUS.rejected, resolvedAt: new Date() },
         { where: { id: suggestionIds } },

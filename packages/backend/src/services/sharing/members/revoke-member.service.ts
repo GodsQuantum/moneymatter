@@ -97,7 +97,7 @@ const revokeMemberImpl = async (params: RevokeMemberParams): Promise<RevokeMembe
     });
   }
 
-  // Budget revoke: sweep the recipient's attached `BudgetTransactions` rows so the
+  // Budget revoke: sweep the recipient's attached `TrackerTransactions` rows so the
   // budget's contents stay consistent with who currently has access. Owner-attached
   // rows (metadata null) and the recipient's underlying `Transactions` rows are
   // untouched — only their link to the budget goes.

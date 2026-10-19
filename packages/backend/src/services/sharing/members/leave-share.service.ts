@@ -98,7 +98,7 @@ const leaveShareImpl = async (params: LeaveShareParams): Promise<LeaveShareImplR
     });
   }
 
-  // Budget leave: sweep this recipient's attached `BudgetTransactions` rows so the
+  // Budget leave: sweep this recipient's attached `TrackerTransactions` rows so the
   // budget's contents stay consistent with who currently has access. Mirrors the
   // revoke-member sweep.
   if (resourceType === RESOURCE_TYPES.budget) {

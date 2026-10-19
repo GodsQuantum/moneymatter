@@ -5,9 +5,9 @@ import {
   type TrackerSuggestionsResponse,
   hasServerAiEntitlement,
 } from '@bt/shared/types';
-import BudgetTransactions from '@models/budget-transactions.model';
-import type Budgets from '@models/budget.model';
 import TrackerSuggestions from '@models/tracker-suggestions.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
+import type Trackers from '@models/trackers.model';
 import { findTransactions } from '@models/transactions-query';
 import type Transactions from '@models/transactions.model';
 import { resolveAIConfiguration } from '@services/ai';
@@ -20,7 +20,7 @@ import { findOwnedTracker } from './find-owned-tracker';
 import { getTrackerScanBlocker } from './run-tracker-scan';
 import { getTrackerScanState } from './tracker-scan-queue';
 
-const resolvePausedReason = async ({ budget }: { budget: Budgets }): Promise<TrackerScanPausedReason | null> => {
+const resolvePausedReason = async ({ budget }: { budget: Trackers }): Promise<TrackerScanPausedReason | null> => {
   if (!budget.aiEnabled) return null;
 
   const blocker = getTrackerScanBlocker({ budget, now: new Date() });
@@ -49,7 +49,7 @@ export const getTrackerSuggestions = async ({
 
   const [pendingRows, matchedRows] = await Promise.all([
     TrackerSuggestions.findAll({
-      where: { budgetId, status: TRACKER_SUGGESTION_STATUS.pending },
+      where: { trackerId: budgetId, status: TRACKER_SUGGESTION_STATUS.pending },
       order: [
         ['score', 'DESC'],
         ['createdAt', 'ASC'],
@@ -58,7 +58,7 @@ export const getTrackerSuggestions = async ({
     // Rows an unlink or a manual link created carry score 0, so they are not AI matches.
     TrackerSuggestions.findAll({
       where: {
-        budgetId,
+        trackerId: budgetId,
         status: [TRACKER_SUGGESTION_STATUS.autoLinked, TRACKER_SUGGESTION_STATUS.accepted],
         score: { [Op.gt]: 0 },
       },
@@ -77,11 +77,11 @@ export const getTrackerSuggestions = async ({
         })
       : ([] as Transactions[]),
     matchedRows.length
-      ? BudgetTransactions.findAll({
-          where: { budgetId, transactionId: matchedRows.map((row) => row.transactionId) },
+      ? TrackerTransactions.findAll({
+          where: { trackerId: budgetId, transactionId: matchedRows.map((row) => row.transactionId) },
           attributes: ['transactionId'],
         })
-      : ([] as BudgetTransactions[]),
+      : ([] as TrackerTransactions[]),
     getTrackerScanState({ budgetId }),
     resolvePausedReason({ budget }),
   ]);

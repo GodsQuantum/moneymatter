@@ -39,7 +39,7 @@ const ORPHAN_SWEEP_DEFINITIONS: ReadonlyArray<{ resourceType: string; foreignTab
   { resourceType: RESOURCE_TYPES.account, foreignTable: 'Accounts' },
   // Household rows store `resourceId = ownerUserId::text` by convention.
   { resourceType: RESOURCE_TYPES.household, foreignTable: 'Users' },
-  { resourceType: RESOURCE_TYPES.budget, foreignTable: 'Budgets' },
+  { resourceType: RESOURCE_TYPES.budget, foreignTable: 'Trackers' },
 ];
 
 const sweepOrphans = async ({

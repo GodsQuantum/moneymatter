@@ -6,7 +6,7 @@ import {
 } from '@bt/shared/types';
 import { logger } from '@js/utils/logger';
 import { SentryTraceData, withQueueProcessSpan, withQueuePublishSpan } from '@js/utils/sentry';
-import Budgets from '@models/budget.model';
+import Trackers from '@models/trackers.model';
 import { sseManager } from '@services/common/sse';
 import { Job, Queue, Worker } from 'bullmq';
 
@@ -52,7 +52,7 @@ const notifyOwner = async ({
 }: {
   payload: Omit<TrackerScanStatusPayload, 'budgetId'> & { budgetId: string };
 }) => {
-  const budget = await Budgets.findByPk(payload.budgetId, { attributes: ['userId'] });
+  const budget = await Trackers.findByPk(payload.budgetId, { attributes: ['userId'] });
   if (!budget) return;
   sseManager.sendToUser({
     userId: budget.userId,

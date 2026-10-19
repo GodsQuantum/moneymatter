@@ -228,7 +228,7 @@ function roundToNearestTenDollars({ cents }: { cents: number }): number {
 /**
  * Seeds category budgets over a trailing window. Skipping `type: category` or
  * `startDate`/`endDate` breaks the read path: `createBudget` then writes no
- * `BudgetCategories` rows (every card reads zero), or `buildDateFilter` drops
+ * `TrackerCategories` rows (every card reads zero), or `buildDateFilter` drops
  * the filter and totals all history against a one-month limit. Limits derive
  * from actual spend in the window so the cards keep their under/near/over states.
  */

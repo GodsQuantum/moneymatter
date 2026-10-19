@@ -3,8 +3,8 @@ import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
 import { ValidationError } from '@js/errors';
 import Accounts from '@models/accounts.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
+import Trackers from '@models/trackers.model';
 import TransactionSplits from '@models/transaction-splits.model';
 import { PlannedPolicy, transactionsInclude } from '@models/transactions-query';
 import * as Transactions from '@models/transactions.model';
@@ -30,7 +30,7 @@ export const getCategoryBudgetTransactions = async ({
   const { ownerUserId, isOwner } = await authorizeBudgetRead({ userId, budgetId });
 
   const budget = await findOrThrowNotFound({
-    query: Budgets.findByPk(budgetId, {
+    query: Trackers.findByPk(budgetId, {
       include: [{ model: Categories, as: 'categories', attributes: ['id', 'name', 'color'] }],
     }),
     message: t({ key: 'budgets.budgetNotFound' }),

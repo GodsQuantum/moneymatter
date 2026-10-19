@@ -1,8 +1,8 @@
 import { t } from '@i18n/index';
 import { NotFoundError } from '@js/errors';
 import { logger } from '@js/utils/logger';
-import BudgetTransactions from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import Users from '@models/users.model';
 import { withTransaction } from '@services/common/with-transaction';
 import { deleteLogoImage } from '@services/logo-images/logo-images.service';
@@ -65,13 +65,13 @@ const deleteBudgetInTx = withTransaction(
     // owner's namespace. Explicit `userId === budget.userId` check (vs `authorizeBudgetAccess`)
     // because the auth helper would return `404` for non-owners with `manage` access, which
     // is the right outcome but reads less obviously than the direct ownership check.
-    const budget = await Budgets.findOne({ where: { id, userId } });
+    const budget = await Trackers.findOne({ where: { id, userId } });
 
     if (!budget) {
       // Distinguish "budget exists but caller is not the owner" from "budget truly gone".
       // Non-owners (even `manage` recipients) must get 404 (existence-mask) rather than a
       // silent success — otherwise the caller has no idea the delete was a no-op.
-      const exists = await Budgets.findByPk(id, { attributes: ['id'] });
+      const exists = await Trackers.findByPk(id, { attributes: ['id'] });
       if (exists) {
         throw new NotFoundError({ message: t({ key: 'budgets.budgetNotFound' }) });
       }
@@ -83,10 +83,10 @@ const deleteBudgetInTx = withTransaction(
     // something to render and the recipient list isn't already gone.
     const cleanup = await cleanupBudgetSharesInTx({ budgetId: id, ownerUserId: userId });
 
-    // BudgetTransactions rows are deleted explicitly so the destroy order matches the
-    // pre-share semantics. Once the budget row goes, FK CASCADE from `budgetId` would also
+    // TrackerTransactions rows are deleted explicitly so the destroy order matches the
+    // pre-share semantics. Once the budget row goes, FK CASCADE from `trackerId` would also
     // remove these — but the explicit destroy keeps the intent obvious in the diff.
-    await BudgetTransactions.destroy({ where: { budgetId: id } });
+    await TrackerTransactions.destroy({ where: { trackerId: id } });
     if (budget.logoImageId) await deleteLogoImage({ id: budget.logoImageId });
     await budget.destroy();
 

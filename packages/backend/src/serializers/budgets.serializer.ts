@@ -14,9 +14,9 @@ import {
   ResourceShareInfo,
 } from '@bt/shared/types';
 import { centsToApiDecimal, centsToApiDecimalOrNull } from '@common/types/money';
-import type Budgets from '@models/budget.model';
 import type Categories from '@models/categories.model';
 import type TrackerLines from '@models/tracker-lines.model';
+import type Trackers from '@models/trackers.model';
 import type { SpendingStatsResponse } from '@services/budgets/spending-stats';
 import type { StatsResponse } from '@services/budgets/stats';
 import type { BudgetShareContext } from '@services/sharing/get-shared-budgets.service';
@@ -79,7 +79,7 @@ const serializeEmbeddedCategories = (categories: Categories[] | undefined): Budg
 export function serializeTrackerLine(line: TrackerLines): TrackerLineResponse {
   return {
     id: line.id,
-    budgetId: line.budgetId,
+    budgetId: line.trackerId,
     name: line.name,
     limitAmount: centsToApiDecimalOrNull(line.limitAmount),
     position: line.position,
@@ -90,7 +90,7 @@ export function serializeTrackerLine(line: TrackerLines): TrackerLineResponse {
 /**
  * Serialize a budget from DB format to API response
  */
-export function serializeBudget(budget: Budgets & { _shareContext?: BudgetShareContext }): BudgetApiResponse {
+export function serializeBudget(budget: Trackers & { _shareContext?: BudgetShareContext }): BudgetApiResponse {
   const categories = serializeEmbeddedCategories(budget.categories);
   // Smart tracking is owner-only; its description and scan state are not for recipients.
   const isRecipient = budget._shareContext !== undefined && !budget._shareContext.isOwner;
@@ -132,7 +132,7 @@ export function serializeBudget(budget: Budgets & { _shareContext?: BudgetShareC
  * Serialize multiple budgets
  */
 export function serializeBudgets(
-  budgets: Array<Budgets & { _shareContext?: BudgetShareContext }>,
+  budgets: Array<Trackers & { _shareContext?: BudgetShareContext }>,
 ): BudgetApiResponse[] {
   return budgets.map(serializeBudget);
 }

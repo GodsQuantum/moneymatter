@@ -12,10 +12,10 @@ import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
 import { ConflictError, ForbiddenError, ValidationError } from '@js/errors';
 import { removeUndefinedKeys } from '@js/helpers';
-import BudgetCategories from '@models/budget-categories.model';
-import Budgets from '@models/budget.model';
+import TrackerCategories from '@models/tracker-categories.model';
 import TrackerLineCategories from '@models/tracker-line-categories.model';
 import TrackerLines from '@models/tracker-lines.model';
+import Trackers from '@models/trackers.model';
 import { applyLogoWrite } from '@services/brand-logos';
 import { getBudgetById } from '@services/budget.service';
 import { runAfterCommit } from '@services/common/run-after-commit';
@@ -55,7 +55,9 @@ const dropLineCategoriesOutsideTracker = async ({
   budgetId: string;
   trackerCategoryIds: string[];
 }) => {
-  const lineIds = (await TrackerLines.findAll({ where: { budgetId }, attributes: ['id'] })).map((line) => line.id);
+  const lineIds = (await TrackerLines.findAll({ where: { trackerId: budgetId }, attributes: ['id'] })).map(
+    (line) => line.id,
+  );
   if (!lineIds.length) return;
 
   await TrackerLineCategories.destroy({
@@ -93,7 +95,7 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
   }
 
   const budget = await findOrThrowNotFound({
-    query: Budgets.findOne({ where: { id, userId: ownerUserId } }),
+    query: Trackers.findOne({ where: { id, userId: ownerUserId } }),
     message: t({ key: 'budgets.budgetNotFound' }),
   });
 
@@ -145,8 +147,8 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
   if (rescan) await runAfterCommit({ fn: () => enqueueTrackerScan({ budgetId: id }) });
 
   if (replaceCategories) {
-    await BudgetCategories.destroy({ where: { budgetId: id } });
-    await BudgetCategories.bulkCreate(expandedCategoryIds.map((categoryId) => ({ budgetId: id, categoryId })));
+    await TrackerCategories.destroy({ where: { trackerId: id } });
+    await TrackerCategories.bulkCreate(expandedCategoryIds.map((categoryId) => ({ trackerId: id, categoryId })));
 
     await dropLineCategoriesOutsideTracker({ budgetId: id, trackerCategoryIds: expandedCategoryIds });
   }

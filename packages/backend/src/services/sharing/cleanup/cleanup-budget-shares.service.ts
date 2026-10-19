@@ -1,7 +1,7 @@
 import { RESOURCE_TYPES, RecordId, SHARE_INVITATION_STATUSES, SharePermission } from '@bt/shared/types';
-import BudgetTransactions from '@models/budget-transactions.model';
 import ResourceShares from '@models/resource-shares.model';
 import ShareInvitations from '@models/share-invitations.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
 import Users from '@models/users.model';
 import { withTransaction } from '@services/common/with-transaction';
 import Sequelize from 'sequelize';
@@ -25,11 +25,11 @@ export interface BudgetShareCleanupResult {
 
 /**
  * Phase 1 of the budget-deletion cleanup, intended to run inside the same transaction as
- * `Budgets.destroy(...)`. Revokes any pending invitations for the budget, deletes the
+ * `Trackers.destroy(...)`. Revokes any pending invitations for the budget, deletes the
  * `ResourceShares` rows (FK does not CASCADE because `resourceId` is a generic VARCHAR),
  * and returns the recipient set so phase 2 can notify them post-commit.
  *
- * `BudgetTransactions` rows attached to the budget are cleaned up by FK CASCADE when the
+ * `TrackerTransactions` rows attached to the budget are cleaned up by FK CASCADE when the
  * budget row goes — no explicit sweep needed here. This service only handles the
  * sharing-side state (shares + invitations).
  *
@@ -71,7 +71,7 @@ export const cleanupBudgetSharesInTx = withTransaction(
 );
 
 /**
- * Sweeps `BudgetTransactions` rows that a specific recipient attached, identified by
+ * Sweeps `TrackerTransactions` rows that a specific recipient attached, identified by
  * `metadata.addedByUserId`. Called from the revoke-member and leave-share paths when
  * `resourceType === 'budget'` so the budget's contents stay consistent with who currently
  * has access. Owner-attached rows (where `metadata` is null) are untouched. The recipient's
@@ -86,9 +86,9 @@ export const sweepRecipientBudgetTransactions = async ({
   budgetId: string;
   recipientUserId: number;
 }): Promise<number> =>
-  BudgetTransactions.destroy({
+  TrackerTransactions.destroy({
     where: {
-      budgetId,
+      trackerId: budgetId,
       [Sequelize.Op.and]: [Sequelize.where(Sequelize.literal(`"metadata"->>'addedByUserId'`), String(recipientUserId))],
     },
   });

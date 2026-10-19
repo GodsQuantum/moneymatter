@@ -14,7 +14,7 @@ import { BUDGET_TYPES, RESOURCE_TYPES, SHARE_PERMISSIONS, TRANSACTION_TYPES } fr
 import { generateRandomRecordId } from '@common/lib/record-id-helpers';
 import { describe, expect, it } from '@jest/globals';
 import { ERROR_CODES } from '@js/errors';
-import BudgetTransactions from '@models/budget-transactions.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
 import * as helpers from '@tests/helpers';
 
 // ---------------------------------------------------------------------------
@@ -186,8 +186,8 @@ describe('Shared budget writes', () => {
       expect(attachRes.statusCode).toBe(200);
 
       const recipientApp = await helpers.findAppUserByEmail({ email: recipient.email });
-      const btRow = await BudgetTransactions.findOne({
-        where: { budgetId: budget.id, transactionId: recipientTx.id },
+      const btRow = await TrackerTransactions.findOne({
+        where: { trackerId: budget.id, transactionId: recipientTx.id },
       });
       expect(btRow).not.toBeNull();
       expect(btRow!.metadata).not.toBeNull();
@@ -205,8 +205,8 @@ describe('Shared budget writes', () => {
 
       expect(detachRes.statusCode).toBe(200);
 
-      const afterRow = await BudgetTransactions.findOne({
-        where: { budgetId: budget.id, transactionId: recipientTx.id },
+      const afterRow = await TrackerTransactions.findOne({
+        where: { trackerId: budget.id, transactionId: recipientTx.id },
       });
       expect(afterRow).toBeNull();
     }, 30000);
@@ -263,8 +263,8 @@ describe('Shared budget writes', () => {
       expect(detachRes.statusCode).toBe(200);
 
       // Row must still be present — the JSONB filter excluded it from the destroy
-      const afterRow = await BudgetTransactions.findOne({
-        where: { budgetId: budget.id, transactionId: ownerTx!.id },
+      const afterRow = await TrackerTransactions.findOne({
+        where: { trackerId: budget.id, transactionId: ownerTx!.id },
       });
       expect(afterRow).not.toBeNull();
     }, 30000);
@@ -508,8 +508,8 @@ describe('Shared budget writes', () => {
       });
 
       // Confirm row exists with metadata set
-      const beforeRow = await BudgetTransactions.findOne({
-        where: { budgetId: budget.id, transactionId: recipientTx.id },
+      const beforeRow = await TrackerTransactions.findOne({
+        where: { trackerId: budget.id, transactionId: recipientTx.id },
       });
       expect(beforeRow).not.toBeNull();
       expect(beforeRow!.metadata).not.toBeNull();
@@ -523,8 +523,8 @@ describe('Shared budget writes', () => {
 
       expect(res.statusCode).toBe(200);
 
-      const afterRow = await BudgetTransactions.findOne({
-        where: { budgetId: budget.id, transactionId: recipientTx.id },
+      const afterRow = await TrackerTransactions.findOne({
+        where: { trackerId: budget.id, transactionId: recipientTx.id },
       });
       expect(afterRow).toBeNull();
     });

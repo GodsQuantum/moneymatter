@@ -1,9 +1,9 @@
 import { Money, centsToApiDecimalOrNull } from '@common/types/money';
 import { logger } from '@js/utils';
-import BudgetCategories from '@models/budget-categories.model';
-import BudgetTransactions from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
 import Categories from '@models/categories.model';
+import TrackerCategories from '@models/tracker-categories.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import { findTransactions } from '@models/transactions-query';
 import Transactions from '@models/transactions.model';
 import { getBaseCurrency } from '@models/users-currencies.model';
@@ -17,7 +17,7 @@ export async function transformBudgets({ userId }: { userId: number }): Promise<
   // user's base currency, so a partial export emitting empty Currency cells
   // would silently lie about every budget row.
   const [budgets, baseCurrency] = await Promise.all([
-    Budgets.findAll({ where: { userId }, order: [['name', 'ASC']] }),
+    Trackers.findAll({ where: { userId }, order: [['name', 'ASC']] }),
     getBaseCurrency({ userId }),
   ]);
 
@@ -27,8 +27,8 @@ export async function transformBudgets({ userId }: { userId: number }): Promise<
   const baseCurrencyCode = baseCurrency?.currencyCode ?? '';
 
   const [budgetCategoriesLinks, budgetTransactionLinks] = await Promise.all([
-    BudgetCategories.findAll({ where: { budgetId: { [Op.in]: budgetIds } } }),
-    BudgetTransactions.findAll({ where: { budgetId: { [Op.in]: budgetIds } } }),
+    TrackerCategories.findAll({ where: { trackerId: { [Op.in]: budgetIds } } }),
+    TrackerTransactions.findAll({ where: { trackerId: { [Op.in]: budgetIds } } }),
   ]);
 
   const categoryIds = [...new Set(budgetCategoriesLinks.map((l) => l.categoryId))];
@@ -61,28 +61,28 @@ export async function transformBudgets({ userId }: { userId: number }): Promise<
     const tx = txById.get(link.transactionId);
     if (!tx) {
       logger.warn(
-        `Data export: budget ${link.budgetId} links to missing transaction ${link.transactionId}; spent total will be understated.`,
+        `Data export: budget ${link.trackerId} links to missing transaction ${link.transactionId}; spent total will be understated.`,
       );
       continue;
     }
-    const list = txByBudgetId.get(link.budgetId) ?? [];
+    const list = txByBudgetId.get(link.trackerId) ?? [];
     list.push(tx);
-    txByBudgetId.set(link.budgetId, list);
+    txByBudgetId.set(link.trackerId, list);
   }
 
   const categoriesByBudgetId = new Map<string, string[]>();
   for (const link of budgetCategoriesLinks) {
-    const list = categoriesByBudgetId.get(link.budgetId) ?? [];
+    const list = categoriesByBudgetId.get(link.trackerId) ?? [];
     const name = categoryNameById.get(link.categoryId);
     if (!name) {
       logger.warn(
-        `Data export: budget ${link.budgetId} links to missing category ${link.categoryId}; emitting unresolved sentinel.`,
+        `Data export: budget ${link.trackerId} links to missing category ${link.categoryId}; emitting unresolved sentinel.`,
       );
       list.push(`(unresolved category)`);
     } else {
       list.push(name);
     }
-    categoriesByBudgetId.set(link.budgetId, list);
+    categoriesByBudgetId.set(link.trackerId, list);
   }
 
   return budgets.map((budget): BudgetRow => {

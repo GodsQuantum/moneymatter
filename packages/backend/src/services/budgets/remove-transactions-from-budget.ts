@@ -1,8 +1,8 @@
 import { SHARE_PERMISSIONS } from '@bt/shared/types';
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
-import BudgetTransactions from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import { withTransaction } from '@services/common/with-transaction';
 import Sequelize, { Op } from 'sequelize';
 
@@ -25,18 +25,18 @@ export const removeTransactionsFromBudget = withTransaction(async (payload: Remo
   });
 
   const budget = await findOrThrowNotFound({
-    query: Budgets.findOne({ where: { id: budgetId, userId: ownerUserId } }),
+    query: Trackers.findOne({ where: { id: budgetId, userId: ownerUserId } }),
     message: t({ key: 'budgets.budgetNotFound' }),
   });
 
   if (isOwner) {
     // Owner can detach anything attached to their budget — recipient-attached rows
     // (metadata.addedByUserId set) and owner-attached rows alike.
-    const where = { budgetId, transactionId: { [Op.in]: transactionIds } };
+    const where = { trackerId: budgetId, transactionId: { [Op.in]: transactionIds } };
     const unlinkedIds = budget.aiEnabled
-      ? (await BudgetTransactions.findAll({ where, attributes: ['transactionId'] })).map((row) => row.transactionId)
+      ? (await TrackerTransactions.findAll({ where, attributes: ['transactionId'] })).map((row) => row.transactionId)
       : [];
-    const removedCount = await BudgetTransactions.destroy({ where });
+    const removedCount = await TrackerTransactions.destroy({ where });
     await rejectUnlinkedTransactions({ userId, budgetId, transactionIds: unlinkedIds });
     return { removedCount };
   }
@@ -53,9 +53,9 @@ export const removeTransactionsFromBudget = withTransaction(async (payload: Remo
   // The destroy returns the number of rows actually removed — we surface this so the
   // recipient can tell "your detach matched nothing" (e.g., they passed transactionIds
   // that belong to owner-attached rows) apart from a normal success.
-  const removedCount = await BudgetTransactions.destroy({
+  const removedCount = await TrackerTransactions.destroy({
     where: {
-      budgetId,
+      trackerId: budgetId,
       transactionId: { [Op.in]: transactionIds },
       [Op.and]: [Sequelize.where(Sequelize.literal(`"metadata"->>'addedByUserId'`), String(userId))],
     },

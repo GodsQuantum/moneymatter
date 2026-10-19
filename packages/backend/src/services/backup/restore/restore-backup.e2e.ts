@@ -438,6 +438,13 @@ describe('Data backup restore (POST /user/backup/restore)', () => {
       expect((firstArchive.readData({ name: 'tracker-lines' }) as unknown[]).length).toBeGreaterThan(0);
       expect((firstArchive.readData({ name: 'tracker-line-categories' }) as unknown[]).length).toBeGreaterThan(0);
 
+      // Archives keep the pre-rename `budgetId` key so older backups still restore.
+      for (const name of ['tracker-lines', 'budget-transactions']) {
+        const rows = firstArchive.readData({ name }) as Record<string, unknown>[];
+        expect(rows.length).toBeGreaterThan(0);
+        expect(rows.every((r) => 'budgetId' in r && !('trackerId' in r))).toBe(true);
+      }
+
       const restore = await helpers.restoreBackup({ fileContent: first.base64 });
       expect(restore.statusCode).toBe(200);
       expect(restore.jobId).toBeTruthy();

@@ -28,10 +28,12 @@ export const createTrackerLine = withTransaction(
       requiredPermission: SHARE_PERMISSIONS.manage,
     });
 
-    const maxPosition = await TrackerLines.max<number | null, TrackerLines>('position', { where: { budgetId } });
+    const maxPosition = await TrackerLines.max<number | null, TrackerLines>('position', {
+      where: { trackerId: budgetId },
+    });
 
     const line = await TrackerLines.create({
-      budgetId,
+      trackerId: budgetId,
       name,
       limitAmount: limitAmount ?? null,
       position: position ?? (maxPosition ?? -1) + 1,

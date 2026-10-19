@@ -1,8 +1,8 @@
 import { RESOURCE_TYPES, RecordId } from '@bt/shared/types';
 import Accounts from '@models/accounts.model';
-import BudgetTransactions from '@models/budget-transactions.model';
-import Budgets from '@models/budget.model';
 import ResourceShares from '@models/resource-shares.model';
+import TrackerTransactions from '@models/tracker-transactions.model';
+import Trackers from '@models/trackers.model';
 import { findTransactions } from '@models/transactions-query';
 import { Op } from 'sequelize';
 
@@ -60,7 +60,7 @@ export const getAccessibleCategoryOwnerIds = async ({ userId }: { userId: number
   }
 
   if (accessibleBudgetIds.length) {
-    const budgetRows = (await Budgets.findAll({
+    const budgetRows = (await Trackers.findAll({
       where: { id: accessibleBudgetIds },
       attributes: ['userId'],
       raw: true,
@@ -104,8 +104,8 @@ export const getAccessibleCategoryCatalogScope = async ({
 
   const budgetCategoryIds = new Set<RecordId>();
   if (accessibleBudgetIds.length) {
-    const junctionRows = (await BudgetTransactions.findAll({
-      where: { budgetId: { [Op.in]: accessibleBudgetIds } },
+    const junctionRows = (await TrackerTransactions.findAll({
+      where: { trackerId: { [Op.in]: accessibleBudgetIds } },
       attributes: ['transactionId'],
       raw: true,
     })) as unknown as Array<{ transactionId: RecordId }>;

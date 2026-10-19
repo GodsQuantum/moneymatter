@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import SelectField from '@/components/fields/select-field.vue';
 import TextareaField from '@/components/fields/textarea-field.vue';
+import { Button } from '@/components/lib/ui/button';
+import { Callout } from '@/components/lib/ui/callout';
 import { Label } from '@/components/lib/ui/label';
 import { StatusBadge } from '@/components/lib/ui/status-badge';
 import { Switch } from '@/components/lib/ui/switch';
 import { useAiSettings } from '@/composable/data-queries/ai-settings';
 import { useAiAllowance } from '@/composable/use-ai-allowance';
+import { useAiFeatureAccess } from '@/composable/use-ai-feature-access';
 import { ROUTES_NAMES } from '@/routes/constants';
 import {
   AI_FEATURE,
@@ -14,6 +18,7 @@ import {
   type TrackerAiPreWindowDays,
 } from '@bt/shared/types';
 import { Loader2Icon, SparklesIcon } from '@lucide/vue';
+import { useQueryClient } from '@tanstack/vue-query';
 import { computed, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -21,6 +26,7 @@ import { type SmartTrackingValues, isSmartTrackingIncomplete } from '../build-bu
 
 const props = defineProps<{
   hasStartDate: boolean;
+  isStoredOn?: boolean;
   isScanning?: boolean;
   showErrors?: boolean;
 }>();
@@ -40,10 +46,21 @@ const switchId = useId();
 const { getFeatureStatus } = useAiSettings();
 const { isReached, resetDate } = useAiAllowance();
 
+const queryClient = useQueryClient();
+const { isPlanGated, hasTrialRecord, isTrialAvailable, trialDaysLeft, trialDays, startTrial, isStartingTrial } =
+  useAiFeatureAccess({ aiFeature: AI_FEATURE.trackerMatching });
+
 const featureStatus = computed(() => getFeatureStatus(AI_FEATURE.trackerMatching));
-const isAllowanceReached = computed(() => isReached({ feature: AI_FEATURE.trackerMatching }));
-const isAiMissing = computed(() => !isAllowanceReached.value && featureStatus.value?.servedBy === null);
-const canTurnOn = computed(() => props.hasStartDate && !isAiMissing.value);
+const isAllowanceReached = computed(() => !isPlanGated.value && isReached({ feature: AI_FEATURE.trackerMatching }));
+const needsTrialStart = computed(() => isTrialAvailable.value && props.isStoredOn);
+const isPlanLocked = computed(
+  () => isPlanGated.value && hasTrialRecord.value && featureStatus.value?.servedBy === null,
+);
+// A gated user has no server model until the trial starts, which is not a missing AI setup.
+const isAiMissing = computed(
+  () => !isPlanGated.value && !isAllowanceReached.value && featureStatus.value?.servedBy === null,
+);
+const canTurnOn = computed(() => props.hasStartDate && !isAiMissing.value && !isPlanLocked.value);
 const isSwitchDisabled = computed(() => props.isScanning || (!model.value.aiEnabled && !canTurnOn.value));
 
 const preWindowOptions = computed(() =>
@@ -68,6 +85,10 @@ watch(
     if (!hasStartDate) model.value.aiEnabled = false;
   },
 );
+
+const startTrialForTracker = async () => {
+  if (await startTrial()) void queryClient.invalidateQueries({ queryKey: VUE_QUERY_CACHE_KEYS.budgetSuggestions });
+};
 
 const linkClass = 'text-primary-text underline-offset-2 hover:underline';
 </script>
@@ -116,6 +137,41 @@ const linkClass = 'text-primary-text underline-offset-2 hover:underline';
       </div>
       <Switch :id="switchId" v-model="model.aiEnabled" :disabled="isSwitchDisabled" />
     </div>
+
+    <Callout v-if="isPlanLocked || needsTrialStart" variant="primary">
+      <div class="grid gap-1">
+        <span>{{ $t('budgets.smartTracking.plan.locked') }}</span>
+        <div class="flex flex-wrap gap-x-3">
+          <Button
+            v-if="needsTrialStart"
+            variant="link"
+            size="sm"
+            class="h-auto p-0"
+            :disabled="isStartingTrial"
+            @click="startTrialForTracker"
+          >
+            {{ $t('budgets.smartTracking.plan.startTrial') }}
+          </Button>
+          <Button as-child variant="link" size="sm" class="h-auto p-0">
+            <RouterLink :to="{ name: ROUTES_NAMES.settingsPlanBilling }">{{ $t('billing.seePlans') }}</RouterLink>
+          </Button>
+          <Button as-child variant="link" size="sm" class="h-auto p-0">
+            <RouterLink :to="{ name: ROUTES_NAMES.settingsAi }">
+              {{ $t('budgets.smartTracking.plan.connectOwnKey') }}
+            </RouterLink>
+          </Button>
+        </div>
+      </div>
+    </Callout>
+    <p v-else-if="trialDaysLeft !== null" class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
+      {{ $t('budgets.smartTracking.plan.trialDaysLeft', trialDaysLeft) }}
+      <RouterLink :to="{ name: ROUTES_NAMES.settingsPlanBilling }" :class="linkClass">
+        {{ $t('billing.seePlans') }}
+      </RouterLink>
+    </p>
+    <p v-else-if="isTrialAvailable" class="text-muted-foreground text-xs">
+      {{ $t('budgets.smartTracking.plan.trialHint', { days: trialDays }) }}
+    </p>
 
     <template v-if="model.aiEnabled">
       <TextareaField

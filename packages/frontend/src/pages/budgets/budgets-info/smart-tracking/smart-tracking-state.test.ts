@@ -89,6 +89,7 @@ describe('getSmartTrackingStripState', () => {
   });
 
   it.each([
+    ['plan', 'pausedPlan'],
     ['allowance', 'pausedAllowance'],
     ['unavailable', 'pausedUnavailable'],
     ['ended', 'ended'],

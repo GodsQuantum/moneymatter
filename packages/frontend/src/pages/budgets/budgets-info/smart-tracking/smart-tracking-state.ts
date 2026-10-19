@@ -5,6 +5,7 @@ type SmartTrackingStripState =
   | 'tip'
   | 'scanning'
   | 'review'
+  | 'pausedPlan'
   | 'pausedAllowance'
   | 'pausedUnavailable'
   | 'ended'
@@ -30,6 +31,8 @@ export const getSmartTrackingStripState = ({
   if (suggestions.pending.length > 0) return 'review';
 
   switch (suggestions.scan.pausedReason) {
+    case 'plan':
+      return 'pausedPlan';
     case 'allowance':
       return 'pausedAllowance';
     case 'unavailable':

@@ -28,7 +28,7 @@ import {
 } from './build-budget-payload';
 import SmartTrackingFields from './components/smart-tracking-fields.vue';
 import TrackerLogo from './components/tracker-logo.vue';
-import { reportTrackerError } from './components/use-tracker-actions';
+import { reportTrackerError, useRefreshSmartTrackingAccess } from './components/use-tracker-actions';
 
 const BUDGET_DEFAULT_VALUES: {
   id: string | null;
@@ -59,6 +59,7 @@ const { t } = useI18n();
 const { addSuccessNotification } = useNotificationCenter();
 
 const queryClient = useQueryClient();
+const refreshSmartTrackingAccess = useRefreshSmartTrackingAccess();
 const form = ref({ ...BUDGET_DEFAULT_VALUES });
 const categoriesFieldTouched = ref(false);
 const smartTracking = ref<SmartTrackingValues>({ ...SMART_TRACKING_DEFAULTS });
@@ -68,6 +69,7 @@ const { isPending: isMutating, mutate: createBudgetItem } = useMutation({
   mutationFn: createBudget,
   onSuccess: (_created, payload) => {
     queryClient.invalidateQueries({ queryKey: VUE_QUERY_CACHE_KEYS.budgetsList });
+    refreshSmartTrackingAccess({ aiEnabled: payload.aiEnabled });
     trackAnalyticsEvent({ event: 'budget_created' });
 
     // Mark onboarding task as complete

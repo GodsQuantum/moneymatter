@@ -166,7 +166,7 @@ export enum TRACKER_SUGGESTION_STATUS {
 
 export type TrackerScanStatus = 'idle' | 'queued' | 'running';
 
-export type TrackerScanPausedReason = 'archived' | 'no_start_date' | 'ended' | 'allowance' | 'unavailable';
+export type TrackerScanPausedReason = 'archived' | 'no_start_date' | 'ended' | 'plan' | 'allowance' | 'unavailable';
 
 export interface TrackerPendingSuggestion<TTransaction = TransactionModel> {
   id: RecordId;

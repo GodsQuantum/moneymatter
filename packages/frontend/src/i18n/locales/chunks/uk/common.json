@@ -424,6 +424,7 @@
   },
   "billing": {
     "seePlans": "Переглянути плани",
+    "trialStartFailed": "Не вдалося почати безкоштовний пробний період. Спробуйте ще раз.",
     "updatePaymentMethod": "Оновіть спосіб оплати",
     "planRequired": {
       "essential": "Включено в план Essential",

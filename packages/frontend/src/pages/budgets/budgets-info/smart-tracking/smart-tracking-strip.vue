@@ -1,15 +1,18 @@
 <script setup lang="ts">
+import { VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import ResponsiveAlertDialog from '@/components/common/responsive-alert-dialog.vue';
 import { Button } from '@/components/lib/ui/button';
 import { Checkbox } from '@/components/lib/ui/checkbox';
 import { StatusBadge } from '@/components/lib/ui/status-badge';
 import { useUserSettings } from '@/composable/data-queries/user-settings';
 import { useAiAllowance } from '@/composable/use-ai-allowance';
+import { useAiFeatureAccess } from '@/composable/use-ai-feature-access';
 import { useDateLocale } from '@/composable/use-date-locale';
 import { cn } from '@/lib/utils';
 import { ROUTES_NAMES } from '@/routes/constants';
-import type { BudgetModel, TrackerSuggestionsResponse } from '@bt/shared/types';
+import { AI_FEATURE, type BudgetModel, type TrackerSuggestionsResponse } from '@bt/shared/types';
 import { ChevronDownIcon, ChevronUpIcon, Loader2Icon, SparklesIcon } from '@lucide/vue';
+import { useQueryClient } from '@tanstack/vue-query';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -27,6 +30,12 @@ const { t } = useI18n();
 const { format, formatRelative } = useDateLocale();
 const { resetDate } = useAiAllowance();
 const { data: userSettings, patch: patchUserSettings } = useUserSettings();
+const queryClient = useQueryClient();
+const { isTrialAvailable, startTrial, isStartingTrial } = useAiFeatureAccess({ aiFeature: AI_FEATURE.trackerMatching });
+
+const startTrialForTracker = async () => {
+  if (await startTrial()) void queryClient.invalidateQueries({ queryKey: VUE_QUERY_CACHE_KEYS.budgetSuggestions });
+};
 
 const tipStorageKey = computed(() => `smart-tracking-tip-hidden:${props.budget.id}`);
 const readTipHiddenHere = () => {
@@ -149,6 +158,26 @@ const hideTip = () => {
           {{ reviewOpen ? $t('budgets.smartTracking.strip.hide') : $t('budgets.smartTracking.strip.review') }}
           <component :is="reviewOpen ? ChevronUpIcon : ChevronDownIcon" class="size-4" />
         </Button>
+      </template>
+
+      <template v-else-if="state === 'pausedPlan'">
+        <StatusBadge variant="warning">{{ $t('budgets.smartTracking.strip.paused') }}</StatusBadge>
+        <span class="text-muted-foreground min-w-0 flex-1">{{ $t('budgets.smartTracking.plan.locked') }}</span>
+        <div class="flex flex-wrap gap-1">
+          <Button v-if="isTrialAvailable" size="sm" :disabled="isStartingTrial" @click="startTrialForTracker">
+            {{ $t('budgets.smartTracking.plan.startTrial') }}
+          </Button>
+          <Button size="sm" :variant="isTrialAvailable ? 'secondary' : 'soft-primary'" as-child>
+            <RouterLink :to="{ name: ROUTES_NAMES.settingsPlanBilling }">
+              {{ $t('budgets.smartTracking.plan.upgrade') }}
+            </RouterLink>
+          </Button>
+          <Button size="sm" variant="ghost" as-child>
+            <RouterLink :to="{ name: ROUTES_NAMES.settingsAi }">
+              {{ $t('budgets.smartTracking.plan.connectOwnKey') }}
+            </RouterLink>
+          </Button>
+        </div>
       </template>
 
       <template v-else-if="pausedCopy">

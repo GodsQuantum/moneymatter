@@ -15,7 +15,11 @@ import { useI18n } from 'vue-i18n';
 
 import SmartTrackingFields from '../components/smart-tracking-fields.vue';
 import TrackerLogo from '../components/tracker-logo.vue';
-import { reportTrackerError, useInvalidateTracker } from '../components/use-tracker-actions';
+import {
+  reportTrackerError,
+  useInvalidateTracker,
+  useRefreshSmartTrackingAccess,
+} from '../components/use-tracker-actions';
 import { parseTrackerDate } from '../tracker-time-status';
 import {
   type SmartTrackingValues,
@@ -31,6 +35,7 @@ const emit = defineEmits<{ saved: []; cancel: [] }>();
 
 const { t } = useI18n();
 const invalidateTracker = useInvalidateTracker();
+const refreshSmartTrackingAccess = useRefreshSmartTrackingAccess();
 const { addSuccessNotification } = useNotificationCenter();
 
 const isCategoryTracker = props.budget.type === BUDGET_TYPES.category;
@@ -61,6 +66,7 @@ const { mutate, isPending } = useMutation({
   mutationFn: editBudget,
   onSuccess: (_data, { payload }) => {
     addSuccessNotification(payload.aiEnabled ? t('budgets.smartTracking.turnedOn') : t('budgets.list.updateSuccess'));
+    refreshSmartTrackingAccess({ aiEnabled: showSmartTracking.value && smartTracking.value.aiEnabled });
     emit('saved');
     return invalidateTracker({ budgetId: props.budget.id });
   },
@@ -192,6 +198,7 @@ const handleSubmit = () => {
       v-if="showSmartTracking"
       v-model="smartTracking"
       :has-start-date="!!form.startDate"
+      :is-stored-on="budget.aiEnabled"
       :is-scanning="isScanning"
       :show-errors="showSmartTrackingErrors"
     />

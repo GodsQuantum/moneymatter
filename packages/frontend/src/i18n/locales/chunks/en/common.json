@@ -424,6 +424,7 @@
   },
   "billing": {
     "seePlans": "See plans",
+    "trialStartFailed": "Couldn't start the free trial. Try again.",
     "updatePaymentMethod": "Update your payment method",
     "planRequired": {
       "essential": "Included in the Essential plan",

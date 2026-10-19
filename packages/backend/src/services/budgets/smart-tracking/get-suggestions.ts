@@ -1,9 +1,9 @@
 import {
   AI_FEATURE,
-  FEATURES,
   TRACKER_SUGGESTION_STATUS,
   type TrackerScanPausedReason,
   type TrackerSuggestionsResponse,
+  hasServerAiEntitlement,
 } from '@bt/shared/types';
 import BudgetTransactions from '@models/budget-transactions.model';
 import type Budgets from '@models/budget.model';
@@ -27,16 +27,13 @@ const resolvePausedReason = async ({ budget }: { budget: Budgets }): Promise<Tra
   if (blocker) return blocker;
 
   const userId = budget.userId;
-  if (await resolveAIConfiguration({ userId, feature: AI_FEATURE.trackerMatching })) return null;
+  const feature = AI_FEATURE.trackerMatching;
+  if (await resolveAIConfiguration({ userId, feature })) return null;
 
   if ((await getConnectionInfos({ userId })).length === 0) {
     const entitlements = await getEntitlementsByUserId({ userId });
-    if (
-      entitlements.features.includes(FEATURES.operator_ai) &&
-      !(await isWithinAiAllowance({ userId, entitlements }))
-    ) {
-      return 'allowance';
-    }
+    if (!hasServerAiEntitlement({ entitlements, feature })) return 'plan';
+    if (!(await isWithinAiAllowance({ userId, entitlements }))) return 'allowance';
   }
   return 'unavailable';
 };

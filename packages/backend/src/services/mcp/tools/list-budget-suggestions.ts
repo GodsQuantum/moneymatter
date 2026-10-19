@@ -14,7 +14,7 @@ export function registerListBudgetSuggestions(server: McpServer) {
     'list_budget_suggestions',
     {
       description:
-        'Smart-tracking state of a tracker the user owns (a "budget" in tool and field names). pending: transactions the AI suggests linking, each with a suggestion id, score (0-1), the AI reason, and a transaction summary; accept or reject them by suggestion id with accept_budget_suggestions / reject_budget_suggestions. aiMatched: transactions the AI linked or the user accepted, still linked, with their reason. scan: status (idle, queued, running), startedAt, lastScannedAt, and pausedReason (archived, no_start_date, ended, allowance, unavailable) when scanning cannot run.',
+        'Smart-tracking state of a tracker the user owns (a "budget" in tool and field names). pending: transactions the AI suggests linking, each with a suggestion id, score (0-1), the AI reason, and a transaction summary; accept or reject them by suggestion id with accept_budget_suggestions / reject_budget_suggestions. aiMatched: transactions the AI linked or the user accepted, still linked, with their reason. scan: status (idle, queued, running), startedAt, lastScannedAt, and pausedReason (archived, no_start_date, ended, plan, allowance, unavailable) when scanning cannot run; plan means the plan does not include smart tracking and the user has no AI connection of their own.',
       inputSchema,
     },
     async (args, extra) => {

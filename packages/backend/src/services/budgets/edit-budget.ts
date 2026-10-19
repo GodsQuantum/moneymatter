@@ -1,4 +1,6 @@
 import {
+  AI_FEATURE,
+  AI_FEATURE_ENTITLEMENTS,
   BUDGET_TYPES,
   type EntityLogoWritePayload,
   type RecordId,
@@ -18,6 +20,7 @@ import { applyLogoWrite } from '@services/brand-logos';
 import { getBudgetById } from '@services/budget.service';
 import { runAfterCommit } from '@services/common/run-after-commit';
 import { withTransaction } from '@services/common/with-transaction';
+import { startFeatureTrial } from '@services/entitlements/start-feature-trial.service';
 import { Op } from 'sequelize';
 
 import { authorizeBudgetAccess } from './authorize-budget-access';
@@ -113,6 +116,7 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
     toUtcDay({ date: startDate }) !== toUtcDay({ date: budget.startDate }) ||
     toUtcDay({ date: endDate }) !== toUtcDay({ date: budget.endDate });
   const rescan = aiEnabled && (aiChanged || rangeChanged);
+  const aiTurnedOn = params.aiEnabled === true && !budget.aiEnabled;
 
   // A running scan writes its cursor at the end and would overwrite the reset below.
   if ((aiChanged || rescan) && (await getTrackerScanState({ budgetId: id })).status !== 'idle') {
@@ -135,6 +139,9 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
   });
 
   await budget.update({ ...removeUndefinedKeys(fields), ...logoPatch, ...(rescan && { aiScannedUntil: null }) });
+  if (aiTurnedOn) {
+    await startFeatureTrial({ userId: ownerUserId, feature: AI_FEATURE_ENTITLEMENTS[AI_FEATURE.trackerMatching] });
+  }
   if (rescan) await runAfterCommit({ fn: () => enqueueTrackerScan({ budgetId: id }) });
 
   if (replaceCategories) {

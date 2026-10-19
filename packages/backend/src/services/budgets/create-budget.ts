@@ -1,4 +1,6 @@
 import {
+  AI_FEATURE,
+  AI_FEATURE_ENTITLEMENTS,
   BUDGET_STATUSES,
   BUDGET_TYPES,
   type EntityLogoWritePayload,
@@ -13,6 +15,7 @@ import { applyLogoWrite } from '@services/brand-logos';
 import { includeCategories } from '@services/budget.service';
 import { runAfterCommit } from '@services/common/run-after-commit';
 import { withTransaction } from '@services/common/with-transaction';
+import { startFeatureTrial } from '@services/entitlements/start-feature-trial.service';
 import { Op } from 'sequelize';
 
 import { assertSmartTrackingConfig } from './smart-tracking/assert-smart-tracking-config';
@@ -82,7 +85,13 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
     ...(payload.aiPreWindowDays !== undefined && { aiPreWindowDays: payload.aiPreWindowDays }),
     ...logoPatch,
   });
-  if (aiEnabled) await runAfterCommit({ fn: () => enqueueTrackerScan({ budgetId: budget.id }) });
+  if (aiEnabled) {
+    await startFeatureTrial({
+      userId: payload.userId,
+      feature: AI_FEATURE_ENTITLEMENTS[AI_FEATURE.trackerMatching],
+    });
+    await runAfterCommit({ fn: () => enqueueTrackerScan({ budgetId: budget.id }) });
+  }
 
   // For category-based budgets, create BudgetCategories entries
   if (categoryIds.length) {

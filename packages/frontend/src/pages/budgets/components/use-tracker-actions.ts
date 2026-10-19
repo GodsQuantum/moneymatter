@@ -2,10 +2,12 @@ import { archiveBudget, deleteBudget, duplicateBudget, editBudget } from '@/api/
 import { VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import { useNotificationCenter } from '@/components/notification-center';
 import { notifyMutationError } from '@/composable/data-queries/use-invalidating-mutation';
+import { useAiFeatureAccess } from '@/composable/use-ai-feature-access';
 import { ApiErrorResponseError } from '@/js/errors';
 import { captureException } from '@/lib/sentry';
 import { ROUTES_NAMES } from '@/routes/constants';
-import { BUDGET_STATUSES, type BudgetModel } from '@bt/shared/types';
+import { useUserStore } from '@/stores';
+import { AI_FEATURE, BUDGET_STATUSES, type BudgetModel } from '@bt/shared/types';
 import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -19,6 +21,19 @@ export const useInvalidateTracker = () => {
       queryClient.invalidateQueries({ queryKey: VUE_QUERY_CACHE_KEYS.budgetsList }),
       queryClient.invalidateQueries({ queryKey: VUE_QUERY_CACHE_KEYS.budgetsListItem }),
     ]);
+};
+
+/** Turning smart tracking on may start its trial, which changes the plan entitlements and what serves the AI. */
+export const useRefreshSmartTrackingAccess = () => {
+  const queryClient = useQueryClient();
+  const userStore = useUserStore();
+  const { isPlanGated } = useAiFeatureAccess({ aiFeature: AI_FEATURE.trackerMatching });
+
+  return ({ aiEnabled }: { aiEnabled?: boolean }) => {
+    if (!aiEnabled || !isPlanGated.value) return;
+    userStore.loadUser().catch((error) => captureException({ error, context: { scope: 'tracker:refresh-access' } }));
+    void queryClient.invalidateQueries({ queryKey: VUE_QUERY_CACHE_KEYS.aiFeaturesStatus });
+  };
 };
 
 export const reportTrackerError = ({

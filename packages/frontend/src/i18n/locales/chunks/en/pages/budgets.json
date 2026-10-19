@@ -289,6 +289,14 @@
       },
       "pausedUntil": "Paused until {date}",
       "connectOwnModel": "Connect your own model",
+      "plan": {
+        "locked": "Smart tracking is part of Plus. Upgrade, or connect your own AI key to keep using it.",
+        "connectOwnKey": "Connect your own key",
+        "upgrade": "Upgrade",
+        "startTrial": "Start free trial",
+        "trialDaysLeft": "Free trial: {n} day left | Free trial: {n} days left",
+        "trialHint": "Includes a {days}-day free trial. It starts when you turn smart tracking on."
+      },
       "turnedOn": "Smart tracking is on. First results in a minute or two.",
       "undo": "Undo",
       "unlinked": "Unlinked. AI won't add it again. | Unlinked {count} transactions. AI won't add them again.",

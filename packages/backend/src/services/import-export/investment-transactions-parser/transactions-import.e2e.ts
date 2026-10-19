@@ -8,6 +8,7 @@ import {
 } from '@bt/shared/types/investments';
 import Coingecko from '@coingecko/coingecko-typescript';
 import { generateRandomRecordId } from '@common/lib/record-id-helpers';
+import { t } from '@i18n/index';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import InvestmentTransaction from '@models/investments/investment-transaction.model';
 import Securities from '@models/investments/securities.model';
@@ -617,8 +618,13 @@ describe('Investment transactions AI import — E2E', () => {
       expect(result.createdTransactions).toBe(0);
       expect(result.skippedHoldings).toBe(1);
       expect(result.warnings).toHaveLength(1);
-      expect(result.warnings[0]).toContain('Skipped "FORGED"');
-      expect(result.warnings[0]).toContain('Search for the security again');
+      expect(result.warnings[0]).toEqual({
+        code: 'HOLDING_SETUP_FAILED',
+        params: {
+          symbol: 'FORGED',
+          reason: t({ key: 'investments.securitySearchResultNotRecognized', locale: 'en' }),
+        },
+      });
 
       expect(await Securities.findOne({ where: { providerSymbol: 'forged-coin' } })).toBeNull();
     });
@@ -1244,11 +1250,14 @@ describe('Investment transactions AI import — E2E', () => {
       expect(result.holdings).toHaveLength(1);
       expect(result.holdings[0]!.transactions).toHaveLength(1);
 
-      const skipWarning = result.warnings.find((w) => w.startsWith('3 of 4 CSV row(s) were skipped'));
-      expect(skipWarning).toBeDefined();
-      expect(skipWarning).toContain('Unmapped side value "Swap"');
-      expect(skipWarning).toContain('Unparseable date "not-a-date"');
-      expect(skipWarning).toContain('Missing symbol');
+      expect(result.warnings).toEqual(
+        expect.arrayContaining([
+          { code: 'CSV_ROWS_INVALID', params: { count: 3, total: 4 } },
+          { code: 'CSV_ROW_UNMAPPED_SIDE', params: { row: 2, value: 'Swap' } },
+          { code: 'CSV_ROW_INVALID_DATE', params: { row: 3, value: 'not-a-date' } },
+          { code: 'CSV_ROW_MISSING_SYMBOL', params: { row: 4 } },
+        ]),
+      );
     });
 
     it('silently drops rows whose side value is mapped to the skip sentinel', async () => {
@@ -1290,7 +1299,8 @@ describe('Investment transactions AI import — E2E', () => {
       expect(result.holdings).toHaveLength(1);
       expect(result.holdings[0]!.transactions.map((t) => t.side)).toEqual(['buy', 'sell']);
       // Critical: no "N of M CSV rows were skipped" warning — skip is deliberate.
-      expect(result.warnings.find((w) => w.includes('CSV row(s) were skipped'))).toBeUndefined();
+      expect(result.warnings.find((w) => w.code === 'CSV_ROWS_INVALID')).toBeUndefined();
+      expect(result.warnings).toContainEqual({ code: 'CSV_ROWS_SKIPPED', params: { count: 2 } });
     });
 
     it('splits compound tickers like SOL-USD into ticker + quote currency', async () => {

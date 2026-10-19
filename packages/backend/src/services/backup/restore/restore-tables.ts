@@ -10,13 +10,7 @@ import { BACKUP_TABLES, type BackupTableDef } from '../registry';
 import type { ArchiveAnalysis, TableColumnPlan } from './analyze-archive';
 import { buildInsertRecord, runBulkInsert } from './bulk-insert';
 import type { ParsedArchive } from './load-archive';
-import {
-  type GuardedFk,
-  buildGuardedReferenceMap,
-  foreignReferenceDroppedMessage,
-  foreignReferenceNulledMessage,
-  guardRowReferences,
-} from './owned-reference-guard';
+import { type GuardedFk, buildGuardedReferenceMap, guardRowReferences } from './owned-reference-guard';
 import { remapEmbeddedReferences } from './remap-embedded-references';
 
 type Row = Record<string, unknown>;
@@ -229,7 +223,6 @@ async function insertTable({
     ctx.warnings.push({
       code: 'mcc_code_missing',
       table: def.fileName,
-      message: `Dropped ${droppedMccCount} user MCC rule(s) whose merchant category code doesn't exist on this instance.`,
       count: droppedMccCount,
     });
   }
@@ -237,7 +230,6 @@ async function insertTable({
     ctx.warnings.push({
       code: 'currency_missing',
       table: def.fileName,
-      message: `Skipped ${droppedCurrencyCount} currency row(s) whose currency isn't available on this instance.`,
       count: droppedCurrencyCount,
     });
   }
@@ -245,25 +237,14 @@ async function insertTable({
     ctx.warnings.push({
       code: 'invalid_row_dropped',
       table: def.fileName,
-      message: `Dropped ${droppedInvalidCount} "${def.fileName}" row(s) that failed validation.`,
       count: droppedInvalidCount,
     });
   }
   for (const [column, count] of fkDroppedByColumn) {
-    ctx.warnings.push({
-      code: 'foreign_reference_dropped',
-      table: def.fileName,
-      message: foreignReferenceDroppedMessage({ table: def.fileName, column, count }),
-      count,
-    });
+    ctx.warnings.push({ code: 'foreign_reference_dropped', table: def.fileName, column, count });
   }
   for (const [column, count] of fkNulledByColumn) {
-    ctx.warnings.push({
-      code: 'foreign_reference_nulled',
-      table: def.fileName,
-      message: foreignReferenceNulledMessage({ table: def.fileName, column, count }),
-      count,
-    });
+    ctx.warnings.push({ code: 'foreign_reference_nulled', table: def.fileName, column, count });
   }
 
   const inserted = await runBulkInsert({ model: def.model, records, transaction: ctx.transaction });
@@ -293,7 +274,7 @@ async function insertTable({
       ctx.warnings.push({
         code: 'foreign_reference_nulled',
         table: def.fileName,
-        message: foreignReferenceNulledMessage({ table: def.fileName, column: selfRefColumn, count: selfRefNulled }),
+        column: selfRefColumn,
         count: selfRefNulled,
       });
     }
@@ -366,7 +347,6 @@ export async function insertRestoreTables({
         warnings.push({
           code: 'shares_skipped',
           table: def.fileName,
-          message: `Skipped ${count} "${def.fileName}" row(s): shared resources reference counterpart users that don't exist on this instance.`,
           count,
         });
       }

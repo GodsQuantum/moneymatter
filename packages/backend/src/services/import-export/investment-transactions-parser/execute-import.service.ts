@@ -17,7 +17,12 @@
  * Instead we collect per-row errors and return them.
  */
 import { INVESTMENT_TRANSACTION_CATEGORY, isTradeSide } from '@bt/shared/types/investments';
-import type { InvestmentImportExecuteResponse, InvestmentImportHolding } from '@bt/shared/types/investments';
+import type {
+  InvestmentImportExecuteResponse,
+  InvestmentImportHolding,
+  InvestmentImportWarning,
+} from '@bt/shared/types/investments';
+import { CustomError } from '@js/errors';
 import { logger } from '@js/utils';
 import Holdings from '@models/investments/holdings.model';
 import Portfolios from '@models/investments/portfolios.model';
@@ -34,6 +39,13 @@ interface ExecuteImportParams {
   skipTempIds: string[];
 }
 
+/**
+ * Holding setup only throws translated CustomErrors; createInvestmentTransaction still throws English
+ * ValidationErrors, so TRANSACTION_FAILED carries no reason.
+ */
+const userFacingReason = ({ error }: { error: unknown }): { reason?: string } =>
+  error instanceof CustomError ? { reason: error.message } : {};
+
 export async function executeInvestmentImport({
   userId,
   holdings,
@@ -48,7 +60,7 @@ export async function executeInvestmentImport({
   let skippedPossibleDuplicates = 0;
   let skippedHoldings = 0;
   let failedTransactions = 0;
-  const warnings: string[] = [];
+  const warnings: InvestmentImportWarning[] = [];
 
   const newSecurityIds = new Set<string>();
 
@@ -57,17 +69,16 @@ export async function executeInvestmentImport({
     // to defend itself. Same for the per-row validation below. Each guard
     // bumps `skippedHoldings` and pushes a warning so the response actually
     // tells the user why N rows didn't land.
+    const symbol = holding.parsedSymbol;
     if (!holding.resolvedSecurity) {
-      const reason = `Skipped "${holding.parsedSymbol}": no resolved security.`;
-      logger.warn(reason);
-      warnings.push(reason);
+      logger.warn(`Skipped "${symbol}": no resolved security.`);
+      warnings.push({ code: 'NO_RESOLVED_SECURITY', params: { symbol } });
       skippedHoldings += 1;
       continue;
     }
     if (!holding.currencyCode) {
-      const reason = `Skipped "${holding.parsedSymbol}": no currency selected.`;
-      logger.warn(reason);
-      warnings.push(reason);
+      logger.warn(`Skipped "${symbol}": no currency selected.`);
+      warnings.push({ code: 'NO_CURRENCY', params: { symbol } });
       skippedHoldings += 1;
       continue;
     }
@@ -78,9 +89,8 @@ export async function executeInvestmentImport({
       where: { id: holding.portfolioId, userId },
     });
     if (!portfolio) {
-      const reason = `Skipped "${holding.parsedSymbol}": target portfolio not found.`;
-      logger.warn(reason);
-      warnings.push(reason);
+      logger.warn(`Skipped "${symbol}": target portfolio not found.`);
+      warnings.push({ code: 'PORTFOLIO_NOT_FOUND', params: { symbol } });
       skippedHoldings += 1;
       continue;
     }
@@ -156,12 +166,11 @@ export async function executeInvestmentImport({
       // without restructuring the existing variable scope.
       preloadedHoldingRef = loadedHolding;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
       logger.error({
-        message: `Failed to set up holding for "${holding.parsedSymbol}"`,
+        message: `Failed to set up holding for "${symbol}"`,
         error: error as Error,
       });
-      warnings.push(`Skipped "${holding.parsedSymbol}": ${message}`);
+      warnings.push({ code: 'HOLDING_SETUP_FAILED', params: { symbol, ...userFacingReason({ error }) } });
       skippedHoldings += 1;
       continue;
     }
@@ -182,9 +191,8 @@ export async function executeInvestmentImport({
       // is right for sell/dividend but wrong for fee/tax – reject the rest
       // instead of silently misclassifying them.
       if (!isTradeSide(tx.side) && tx.side !== INVESTMENT_TRANSACTION_CATEGORY.dividend) {
-        const reason = `Skipped "${holding.parsedSymbol}" ${tx.side} on ${tx.date}: this category is not yet supported.`;
-        logger.warn(reason);
-        warnings.push(reason);
+        logger.warn(`Skipped "${symbol}" ${tx.side} on ${tx.date}: this category is not yet supported.`);
+        warnings.push({ code: 'UNSUPPORTED_CATEGORY', params: { symbol, side: tx.side, date: tx.date } });
         failedTransactions += 1;
         continue;
       }
@@ -207,13 +215,14 @@ export async function executeInvestmentImport({
       } catch (error) {
         // Don't abort the whole batch – surface the failure in the response so
         // the user knows N rows didn't actually land despite the 200.
-        const message = error instanceof Error ? error.message : String(error);
-        const reason = `Failed to import a "${holding.parsedSymbol}" ${tx.side} on ${tx.date}: ${message}`;
         logger.error({
-          message: `Failed to import transaction (tempId=${tx.tempId}, symbol=${holding.parsedSymbol})`,
+          message: `Failed to import transaction (tempId=${tx.tempId}, symbol=${symbol})`,
           error: error as Error,
         });
-        warnings.push(reason);
+        warnings.push({
+          code: 'TRANSACTION_FAILED',
+          params: { symbol, side: tx.side, date: tx.date },
+        });
         failedTransactions += 1;
       }
     }

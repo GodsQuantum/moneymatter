@@ -34,6 +34,9 @@
         "currencyConflict": "The selected statements report different currencies ({currencies}). They will all be imported into one account, using that account's currency.",
         "unsupportedFileNamed": "{name} is not a PDF, CSV, TXT, JPG, PNG or WebP file",
         "unreadableImageNamed": "{name} could not be read as an image",
+        "invalidPdfNamed": "{name} doesn't appear to be a valid PDF. The file may be corrupted or renamed.",
+        "invalidImageNamed": "{name} doesn't appear to be a valid JPG, PNG or WebP image. The file may be corrupted or renamed.",
+        "invalidTextNamed": "{name} doesn't appear to be a valid {ext} file. The file may be binary or renamed.",
         "pasteImageButton": "Paste image",
         "pasteShortcutHint": "or press {shortcut}",
         "clipboardNoImage": "No image found in the clipboard.",
@@ -151,9 +154,15 @@
         "backButton": "Back",
         "continueButton": "Continue to import",
         "transactionCount": "({count} transactions)",
-        "duplicateCheckFailed": "We couldn't check this statement against your existing transactions, so the duplicate count below is unavailable. Review the list before importing."
+        "duplicateCheckFailed": "We couldn't check this statement against your existing transactions, so the duplicate count below is unavailable. Review the list before importing.",
+        "noDescription": "No description"
       },
       "droppedRowsWarning": "{count} line from the AI response couldn't be read and was skipped. The imported count below may be lower than what's in your file. | {count} lines from the AI response couldn't be read and were skipped. The imported count below may be lower than what's in your file.",
+      "errors": {
+        "estimateFailed": "Failed to analyze the file",
+        "extractFailed": "Failed to extract transactions",
+        "importFailed": "Failed to start the import"
+      },
       "importResults": {
         "readyTitle": "Ready to import",
         "readyDescription": "Review the summary below and click \"Import Transactions\" to proceed.",
@@ -180,7 +189,14 @@
         "errorHeader": "Error",
         "batchIdNote": "Import batch ID: {batchId}. You can use this ID to find and manage all imported transactions.",
         "viewTransactionsButton": "View transactions",
-        "startNewImportButton": "Start new import"
+        "startNewImportButton": "Start new import",
+        "rowErrors": {
+          "invalidDate": "Unrecognized date \"{date}\"",
+          "futureDate": "Date {date} is in the future",
+          "amountNotPositive": "Amount must be greater than zero (got {amount})",
+          "amountTooLarge": "Amount {amount} exceeds the maximum of {max}",
+          "rowFailed": "This transaction could not be imported"
+        }
       }
     }
   }

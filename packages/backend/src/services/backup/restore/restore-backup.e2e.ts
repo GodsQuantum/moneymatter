@@ -22,6 +22,7 @@ import { generateRandomRecordId } from '@common/lib/record-id-helpers';
 import { t } from '@i18n/index';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { RateLimitService } from '@services/common/rate-limit.service';
+import { PNG_1X1_BYTES, PNG_1X1_DATA_URL } from '@tests/fixtures/logo-images';
 import * as helpers from '@tests/helpers';
 import { VALID_ANTHROPIC_API_KEY } from '@tests/mocks/anthropic/mock-api';
 import { VALID_MONOBANK_TOKEN } from '@tests/mocks/monobank/mock-api';
@@ -196,6 +197,11 @@ async function seedRichData() {
     raw: true,
   });
   await helpers.addTransactionToCustomBudget({ id: budget.id, payload: { transactionIds: [expense!.id] }, raw: true });
+  await helpers.createTrackerLine({
+    budgetId: budget.id,
+    payload: { name: 'Groceries', categoryIds: [childCategory.id] },
+    raw: true,
+  });
 
   // Subscription (generates periods).
   await helpers.createSubscription({
@@ -429,6 +435,8 @@ describe('Data backup restore (POST /user/backup/restore)', () => {
       expect((firstArchive.readData({ name: 'transaction-templates' }) as unknown[]).length).toBeGreaterThan(0);
       expect((firstArchive.readData({ name: 'transaction-template-tags' }) as unknown[]).length).toBeGreaterThan(0);
       expect((firstArchive.readData({ name: 'category-tags' }) as unknown[]).length).toBeGreaterThan(0);
+      expect((firstArchive.readData({ name: 'tracker-lines' }) as unknown[]).length).toBeGreaterThan(0);
+      expect((firstArchive.readData({ name: 'tracker-line-categories' }) as unknown[]).length).toBeGreaterThan(0);
 
       const restore = await helpers.restoreBackup({ fileContent: first.base64 });
       expect(restore.statusCode).toBe(200);
@@ -680,6 +688,12 @@ describe('Data backup restore (POST /user/backup/restore)', () => {
           expect(targetAccountIds.has(ruleAccountIds[0]!)).toBe(true);
 
           const targetCategoryIds = new Set<string>((await helpers.getCategoriesList()).map((row) => row.id));
+
+          const restoredTracker = (await helpers.getCustomBudgets({ raw: true })).find((row) => row.name === 'Monthly');
+          const lineCategoryIds = restoredTracker!.lines.flatMap((line) => line.categories.map((row) => row.id));
+          expect(lineCategoryIds).toHaveLength(1);
+          expect(targetCategoryIds.has(lineCategoryIds[0]!)).toBe(true);
+
           expect(automations[0]!.actions).toHaveLength(2);
           for (const action of automations[0]!.actions) {
             if (action.type === 'set_category') expect(targetCategoryIds.has(action.categoryId)).toBe(true);
@@ -1044,6 +1058,36 @@ describe('Data backup restore (POST /user/backup/restore)', () => {
   // existing row. The restore only accepts ids it inserted this run: a required
   // column drops the row, a nullable column is nulled, and the victim's data is
   // never touched.
+  describe('Tracker logo images', () => {
+    it('gives a tracker restored onto another user its own copy of the logo image', async () => {
+      const source = await helpers.createCustomBudget({ name: 'Logo tracker', logoImage: PNG_1X1_DATA_URL, raw: true });
+      expect(source.logoImageId).toBeTruthy();
+      const { base64 } = await exportArchive();
+
+      const target = await helpers.provisionSecondUserWithBaseCurrency();
+      const restoredLogoImageId = await helpers.asUser({
+        cookies: target.cookies,
+        fn: async () => {
+          const restore = await helpers.withSelfHost(() => helpers.restoreBackup({ fileContent: base64 }));
+          expect(restore.statusCode).toBe(200);
+          const status = await helpers.waitForRestore({ jobId: restore.jobId! });
+          expect(status.status).toBe('completed');
+
+          const restored = (await helpers.getCustomBudgets({ raw: true })).find((b) => b.name === 'Logo tracker');
+          expect(restored?.logoImageId).toBeTruthy();
+          expect(restored!.logoImageId).not.toBe(source.logoImageId);
+          return restored!.logoImageId!;
+        },
+      });
+
+      expect((await helpers.deleteCustomBudget({ id: source.id })).statusCode).toBe(200);
+
+      const image = await helpers.getLogoImage({ id: restoredLogoImageId });
+      expect(image.statusCode).toBe(200);
+      expect(image.body.equals(PNG_1X1_BYTES)).toBe(true);
+    });
+  });
+
   describe('Cross-user reference forgery guard', () => {
     /** Provision a second user (the would-be victim) and seed a real account,
      *  category, payee and transaction whose ids a forged backup can point at. */

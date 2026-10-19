@@ -137,6 +137,10 @@
       "receiptParsing": {
         "name": "Invoice matching",
         "description": "Reads an uploaded invoice or receipt and finds the transaction it belongs to."
+      },
+      "trackerMatching": {
+        "name": "Tracker matching",
+        "description": "Scans new transactions and suggests the ones that belong to a smart tracker."
       }
     },
     "transactions": {
@@ -152,6 +156,7 @@
       },
       "record": {
         "addedByTooltip": "This transaction was attached to the tracker by {handle}",
+        "matchedByAi": "Matched by AI",
         "externalLinkTooltip": "Open external link",
         "locationTooltip": "Open location on the map",
         "attachmentsTooltip": "Has attachments",
@@ -312,6 +317,13 @@
     "viewOnGitHub": "View on GitHub",
     "newVersion": "New version {version}",
     "newRelease": "New release",
+    "trackerAiMatches": {
+      "title": "{name}: {summary}",
+      "added": "{count} transaction added | {count} transactions added",
+      "toReview": "{count} transaction to review | {count} transactions to review",
+      "toReviewShort": "{count} to review",
+      "both": "{added}, {toReview}"
+    },
     "tagReminder": {
       "thresholdMessage": "spent {amount} (threshold: {threshold})",
       "existenceMessage": "{count} transaction | {count} transactions"

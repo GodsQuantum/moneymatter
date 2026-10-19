@@ -115,11 +115,100 @@ module.exports = {
       );
 
       await queryInterface.addIndex('TrackerLineCategories', ['categoryId'], { transaction });
+
+      await queryInterface.addColumn(
+        'Budgets',
+        'aiEnabled',
+        { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+        { transaction },
+      );
+      await queryInterface.addColumn(
+        'Budgets',
+        'aiDescription',
+        { type: DataTypes.TEXT, allowNull: true },
+        { transaction },
+      );
+      await queryInterface.addColumn(
+        'Budgets',
+        'aiPreWindowDays',
+        { type: DataTypes.INTEGER, allowNull: false, defaultValue: 60 },
+        { transaction },
+      );
+      await queryInterface.addColumn(
+        'Budgets',
+        'aiScannedUntil',
+        { type: DataTypes.DATE, allowNull: true, comment: 'Scan cursor: rows updated after it are new to the AI' },
+        { transaction },
+      );
+      await queryInterface.addColumn(
+        'Budgets',
+        'aiLastScannedAt',
+        { type: DataTypes.DATE, allowNull: true },
+        { transaction },
+      );
+
+      await queryInterface.createTable(
+        'TrackerSuggestions',
+        {
+          id: {
+            type: DataTypes.UUID,
+            primaryKey: true,
+            allowNull: false,
+          },
+          budgetId: {
+            type: DataTypes.UUID,
+            allowNull: false,
+            references: { model: 'Budgets', key: 'id' },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE',
+          },
+          transactionId: {
+            type: DataTypes.UUID,
+            allowNull: false,
+            references: { model: 'Transactions', key: 'id' },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE',
+          },
+          score: {
+            type: DataTypes.FLOAT,
+            allowNull: false,
+          },
+          reason: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+          },
+          status: {
+            type: DataTypes.STRING(16),
+            allowNull: false,
+          },
+          createdAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+          },
+          resolvedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+          },
+        },
+        { transaction },
+      );
+
+      await queryInterface.addIndex('TrackerSuggestions', ['budgetId', 'transactionId'], {
+        unique: true,
+        transaction,
+      });
+      await queryInterface.addIndex('TrackerSuggestions', ['budgetId', 'status'], { transaction });
+      await queryInterface.addIndex('TrackerSuggestions', ['transactionId'], { transaction });
     });
   },
 
   down: async (queryInterface: QueryInterface): Promise<void> => {
     await queryInterface.sequelize.transaction(async (transaction) => {
+      await queryInterface.dropTable('TrackerSuggestions', { transaction });
+      for (const column of ['aiLastScannedAt', 'aiScannedUntil', 'aiPreWindowDays', 'aiDescription', 'aiEnabled']) {
+        await queryInterface.removeColumn('Budgets', column, { transaction });
+      }
       await queryInterface.dropTable('TrackerLineCategories', { transaction });
       await queryInterface.dropTable('TrackerLines', { transaction });
       for (const table of LOGO_TABLES.toReversed()) {

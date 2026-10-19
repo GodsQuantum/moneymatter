@@ -132,6 +132,18 @@
             <span class="text-sm tracking-wider whitespace-nowrap">
               {{ category ? category.name : t('common.ui.other') }}
             </span>
+            <ResponsiveTooltip v-if="aiMatchReason" content-class-name="max-w-64" :delay-duration="100">
+              <template #content>
+                <p class="font-medium">{{ $t('common.transactions.record.matchedByAi') }}</p>
+                <p class="text-muted-foreground">{{ aiMatchReason }}</p>
+              </template>
+              <SparklesIcon
+                class="text-primary-text size-3.5 shrink-0 cursor-help"
+                role="img"
+                :aria-label="$t('common.transactions.record.matchedByAi')"
+                @click="isTouch && $event.stopPropagation()"
+              />
+            </ResponsiveTooltip>
             <ResponsiveTooltip
               v-if="addedByTooltip"
               :content="addedByTooltip"
@@ -259,6 +271,7 @@ import {
   HandCoinsIcon,
   MapPinIcon,
   RocketIcon,
+  SparklesIcon,
   UsersIcon,
 } from '@lucide/vue';
 import { useMediaQuery } from '@vueuse/core';
@@ -295,6 +308,8 @@ const props = withDefaults(
     tagsVariant?: TagsIndicatorVariant;
     /** Badges the category circle with the account logo, so it applies to category-circle rows only. */
     showAccount?: boolean;
+    /** Marks a row smart tracking linked; the reason shows in its tooltip. */
+    aiMatchReason?: string;
   }>(),
   {
     asButton: true,

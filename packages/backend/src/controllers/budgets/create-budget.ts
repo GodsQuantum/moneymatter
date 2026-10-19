@@ -6,6 +6,8 @@ import { serializeBudget } from '@root/serializers';
 import * as budgetsService from '@root/services/budgets/create-budget';
 import { z } from 'zod';
 
+import { smartTrackingFieldsShape } from './smart-tracking-fields.schema';
+
 const schema = z.object({
   body: withDateOrder(
     z
@@ -22,6 +24,7 @@ const schema = z.object({
           .optional(),
         ...logoFieldsShape,
         logoImage: logoImageSchema,
+        ...smartTrackingFieldsShape,
       })
       .superRefine((data, ctx) => refineLogoFieldsOnCreate({ data, ctx }))
       .refine((data) => data.type !== BUDGET_TYPES.category || (data.categoryIds && data.categoryIds.length > 0), {
@@ -47,6 +50,9 @@ export default createController(schema, async ({ user, body }) => {
     logoColor,
     logoIcon,
     logoImage,
+    aiEnabled,
+    aiDescription,
+    aiPreWindowDays,
   } = body;
 
   const budget = await budgetsService.createBudget({
@@ -64,6 +70,9 @@ export default createController(schema, async ({ user, body }) => {
     logoColor,
     logoIcon,
     logoImage,
+    aiEnabled,
+    aiDescription,
+    aiPreWindowDays,
   });
 
   // Serialize: convert cents to decimal for API response

@@ -50,6 +50,9 @@ export const duplicateBudget = withTransaction(async ({ userId, id }: { userId: 
     endDate: null,
     autoInclude: false,
     archivePromptDismissed: false,
+    aiEnabled: false,
+    aiDescription: source.aiDescription,
+    aiPreWindowDays: source.aiPreWindowDays,
     ...pick(source, LOGO_FIELD_KEYS),
     logoImageId: await copyLogoImageIfPresent({ id: source.logoImageId }),
   });

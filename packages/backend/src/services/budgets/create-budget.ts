@@ -1,4 +1,9 @@
-import { BUDGET_STATUSES, BUDGET_TYPES, type EntityLogoWritePayload } from '@bt/shared/types';
+import {
+  BUDGET_STATUSES,
+  BUDGET_TYPES,
+  type EntityLogoWritePayload,
+  type TrackerAiPreWindowDays,
+} from '@bt/shared/types';
 import { Money } from '@common/types/money';
 import BudgetCategories from '@models/budget-categories.model';
 import BudgetTransactions from '@models/budget-transactions.model';
@@ -6,9 +11,12 @@ import Budgets from '@models/budget.model';
 import { findTransactions } from '@models/transactions-query';
 import { applyLogoWrite } from '@services/brand-logos';
 import { includeCategories } from '@services/budget.service';
+import { runAfterCommit } from '@services/common/run-after-commit';
 import { withTransaction } from '@services/common/with-transaction';
 import { Op } from 'sequelize';
 
+import { assertSmartTrackingConfig } from './smart-tracking/assert-smart-tracking-config';
+import { enqueueTrackerScan } from './smart-tracking/tracker-scan-queue';
 import { assertCategoriesOwnedByUser } from './utils/assert-categories-owned-by-user';
 import { expandCategoryIds } from './utils/expand-category-ids';
 
@@ -23,6 +31,9 @@ interface CreateBudgetPayload extends EntityLogoWritePayload {
   endDate?: Date | null;
   autoInclude?: boolean;
   limitAmount?: Money | null;
+  aiEnabled?: boolean;
+  aiDescription?: string | null;
+  aiPreWindowDays?: TrackerAiPreWindowDays;
 }
 
 const prepareTransactionFilters = (payload: CreateBudgetPayload) => ({
@@ -34,6 +45,13 @@ const prepareTransactionFilters = (payload: CreateBudgetPayload) => ({
 
 export const createBudget = withTransaction(async (payload: CreateBudgetPayload) => {
   const budgetType = payload.type ?? BUDGET_TYPES.manual;
+  const aiEnabled = payload.aiEnabled ?? false;
+  assertSmartTrackingConfig({
+    type: budgetType,
+    aiEnabled,
+    aiDescription: payload.aiDescription,
+    startDate: payload.startDate,
+  });
 
   const categoryIds =
     budgetType === BUDGET_TYPES.category && payload.categoryIds?.length
@@ -59,8 +77,12 @@ export const createBudget = withTransaction(async (payload: CreateBudgetPayload)
     endDate: payload.endDate || null,
     autoInclude: payload.autoInclude ?? false,
     limitAmount: payload.limitAmount ?? null,
+    aiEnabled,
+    aiDescription: payload.aiDescription ?? null,
+    ...(payload.aiPreWindowDays !== undefined && { aiPreWindowDays: payload.aiPreWindowDays }),
     ...logoPatch,
   });
+  if (aiEnabled) await runAfterCommit({ fn: () => enqueueTrackerScan({ budgetId: budget.id }) });
 
   // For category-based budgets, create BudgetCategories entries
   if (categoryIds.length) {

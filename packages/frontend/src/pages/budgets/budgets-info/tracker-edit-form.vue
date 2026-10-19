@@ -7,15 +7,24 @@ import DateField from '@/components/fields/date-field.vue';
 import InputField from '@/components/fields/input-field.vue';
 import Button from '@/components/lib/ui/button/Button.vue';
 import { useNotificationCenter } from '@/components/notification-center';
+import { useBudgetAccess } from '@/composable/use-budget-access';
 import { BUDGET_TYPES, type BudgetModel } from '@bt/shared/types';
 import { useMutation } from '@tanstack/vue-query';
-import { computed, ref } from 'vue';
+import { computed, ref, toRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import SmartTrackingFields from '../components/smart-tracking-fields.vue';
 import TrackerLogo from '../components/tracker-logo.vue';
 import { reportTrackerError, useInvalidateTracker } from '../components/use-tracker-actions';
 import { parseTrackerDate } from '../tracker-time-status';
-import { buildBudgetPayload } from '../build-budget-payload';
+import {
+  type SmartTrackingValues,
+  buildBudgetPayload,
+  buildSmartTrackingPatch,
+  isSmartTrackingIncomplete,
+} from '../build-budget-payload';
+import { isScanActive } from './smart-tracking/smart-tracking-state';
+import { useTrackerSuggestions } from './smart-tracking/use-tracker-suggestions';
 
 const props = defineProps<{ budget: BudgetModel }>();
 const emit = defineEmits<{ saved: []; cancel: [] }>();
@@ -25,6 +34,8 @@ const invalidateTracker = useInvalidateTracker();
 const { addSuccessNotification } = useNotificationCenter();
 
 const isCategoryTracker = props.budget.type === BUDGET_TYPES.category;
+const { isOwner } = useBudgetAccess(toRef(() => props.budget));
+const showSmartTracking = computed(() => !isCategoryTracker && isOwner.value);
 
 const form = ref({
   name: props.budget.name,
@@ -36,10 +47,20 @@ const form = ref({
 const storedLogo = toLogoSelection(props.budget);
 const logo = ref<LogoSelection | null>(storedLogo);
 
+const storedSmartTracking: SmartTrackingValues = {
+  aiEnabled: props.budget.aiEnabled,
+  aiDescription: props.budget.aiDescription,
+  aiPreWindowDays: props.budget.aiPreWindowDays,
+};
+const smartTracking = ref<SmartTrackingValues>({ ...storedSmartTracking });
+const showSmartTrackingErrors = ref(false);
+const { data: suggestions } = useTrackerSuggestions({ budgetId: () => props.budget.id, enabled: showSmartTracking });
+const isScanning = computed(() => isScanActive({ status: suggestions.value?.scan.status }));
+
 const { mutate, isPending } = useMutation({
   mutationFn: editBudget,
-  onSuccess: () => {
-    addSuccessNotification(t('budgets.list.updateSuccess'));
+  onSuccess: (_data, { payload }) => {
+    addSuccessNotification(payload.aiEnabled ? t('budgets.smartTracking.turnedOn') : t('budgets.list.updateSuccess'));
     emit('saved');
     return invalidateTracker({ budgetId: props.budget.id });
   },
@@ -76,7 +97,9 @@ const dateFields = computed(() => [
 
 const handleSubmit = () => {
   categoriesTouched.value = true;
+  showSmartTrackingErrors.value = true;
   if (isCategoryMissing.value) return;
+  if (showSmartTracking.value && isSmartTrackingIncomplete({ values: smartTracking.value })) return;
   mutate({
     budgetId: props.budget.id,
     payload: {
@@ -88,6 +111,9 @@ const handleSubmit = () => {
         categoryIds: isCategoryTracker ? form.value.categoryIds : undefined,
       }),
       ...toLogoPatch({ selection: logo.value, stored: storedLogo }),
+      ...(showSmartTracking.value
+        ? buildSmartTrackingPatch({ values: smartTracking.value, stored: storedSmartTracking })
+        : {}),
     },
   });
 };
@@ -161,6 +187,14 @@ const handleSubmit = () => {
         {{ $t('budgets.details.edit.datesHint') }}
       </p>
     </div>
+
+    <SmartTrackingFields
+      v-if="showSmartTracking"
+      v-model="smartTracking"
+      :has-start-date="!!form.startDate"
+      :is-scanning="isScanning"
+      :show-errors="showSmartTrackingErrors"
+    />
 
     <div class="flex justify-end gap-2">
       <Button type="button" variant="outline" :disabled="isPending" @click="emit('cancel')">

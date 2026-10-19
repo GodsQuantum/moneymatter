@@ -506,6 +506,13 @@ const TABLE_DEFS = [
     scope: { strategy: 'viaParent', fk: 'lineId', parent: 'trackerLines' },
     restoreMode: 'insert',
   },
+  {
+    fileName: 'tracker-suggestions',
+    model: models.TrackerSuggestions,
+    tier: 5,
+    scope: { strategy: 'viaParent', fk: 'budgetId', parent: 'budgets' },
+    restoreMode: 'insert',
+  },
 
   // tier 6
   {

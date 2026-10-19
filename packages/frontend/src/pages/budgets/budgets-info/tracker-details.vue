@@ -31,7 +31,7 @@ import {
   Trash2Icon,
   UsersIcon,
 } from '@lucide/vue';
-import { computed, onMounted, ref, toRef, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -47,6 +47,7 @@ import {
 import { utilizationClasses } from '../utilization-classes';
 import TrackerLinesTable from './limits/tracker-lines-table.vue';
 import { useTrackerLineMutations } from './limits/use-tracker-line-mutations';
+import { useTrackerScanEvents } from './smart-tracking/use-tracker-suggestions';
 import BudgetStatistics from './statistics/budget-statistics.vue';
 import { getTrackerLimitSummary } from './tracker-summary';
 import TrackerEditForm from './tracker-edit-form.vue';
@@ -66,6 +67,7 @@ const { archive, unarchive, toggleArchive, duplicate } = useTrackerActions();
 
 const budgetId = computed(() => props.budget.id);
 const { isOwner, canManage, canWrite, isSharedWithCaller, ownerHandle } = useBudgetAccess(toRef(() => props.budget));
+useTrackerScanEvents({ budgetId });
 
 const {
   data: stats,
@@ -221,14 +223,9 @@ const stripCells = computed<StripCell[]>(() => {
 
 const limitsRequested = ref(route.query.tab === 'limits');
 const showLimitsTab = computed(() => props.budget.lines.length > 0 || limitsRequested.value);
-const autoOpenAddLine = ref(route.query.addLine === '1');
 
 const queryTab = TAB_VALUES.find((value) => value === route.query.tab);
 const activeTab = ref<TabValue>(queryTab ?? (showLimitsTab.value ? 'limits' : 'transactions'));
-
-watch(activeTab, () => {
-  autoOpenAddLine.value = false;
-});
 
 watch(showLimitsTab, (shown) => {
   if (!shown && activeTab.value === 'limits') activeTab.value = 'transactions';
@@ -251,6 +248,7 @@ const handleSetLimits = () => {
 };
 
 const isEditOpen = ref(false);
+const isReviewOpen = ref(false);
 const isShareOpen = ref(false);
 const isDeleteOpen = ref(false);
 const isRemoveLimitsOpen = ref(false);
@@ -267,12 +265,23 @@ const handleRemoveLimits = () =>
     },
   );
 
-onMounted(() => {
-  const { edit, addLine, ...restQuery } = route.query;
-  if (edit === undefined && addLine === undefined) return;
-  if (edit === '1' && canManage.value) isEditOpen.value = true;
-  router.replace({ query: restQuery });
-});
+watch(
+  () => [route.query.edit, route.query.review],
+  ([edit, review]) => {
+    if (route.params.id !== props.budget.id) return;
+    if (edit === undefined && review === undefined) return;
+    if (edit === '1' && canManage.value) isEditOpen.value = true;
+    if (review === '1') {
+      activeTab.value = 'transactions';
+      isReviewOpen.value = true;
+    }
+    const restQuery = { ...route.query };
+    delete restQuery.edit;
+    delete restQuery.review;
+    router.replace({ query: restQuery });
+  },
+  { immediate: true },
+);
 
 const isArchivePending = computed(() => archive.isPending.value || unarchive.isPending.value);
 
@@ -481,9 +490,14 @@ const chipClass = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-
           :stats="stats"
           :stats-pending="isStatsPending"
           :can-manage="canManage"
-          :auto-open-add-line="autoOpenAddLine"
         />
-        <TransactionsList v-else-if="activeTab === 'transactions'" :budget="budget" :can-write="canWrite" />
+        <TransactionsList
+          v-else-if="activeTab === 'transactions'"
+          v-model:review-open="isReviewOpen"
+          :budget="budget"
+          :can-write="canWrite"
+          @open-settings="isEditOpen = true"
+        />
         <BudgetStatistics v-else :budget="budget" :stats="stats" />
       </div>
     </Card>

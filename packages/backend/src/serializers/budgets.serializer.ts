@@ -45,6 +45,10 @@ interface BudgetApiResponse extends EntityLogoFields {
   autoInclude: boolean;
   limitAmount: number | null;
   archivePromptDismissed: boolean;
+  aiEnabled: boolean;
+  aiDescription: string | null;
+  aiPreWindowDays: number;
+  aiLastScannedAt: Date | null;
   categories: BudgetCategoryResponse[];
   lines: TrackerLineResponse[];
   /** Present on user-facing list/detail responses when share context is attached. */
@@ -88,6 +92,8 @@ export function serializeTrackerLine(line: TrackerLines): TrackerLineResponse {
  */
 export function serializeBudget(budget: Budgets & { _shareContext?: BudgetShareContext }): BudgetApiResponse {
   const categories = serializeEmbeddedCategories(budget.categories);
+  // Smart tracking is owner-only; its description and scan state are not for recipients.
+  const isRecipient = budget._shareContext !== undefined && !budget._shareContext.isOwner;
 
   const response: BudgetApiResponse = {
     id: budget.id,
@@ -100,6 +106,10 @@ export function serializeBudget(budget: Budgets & { _shareContext?: BudgetShareC
     autoInclude: budget.autoInclude,
     limitAmount: centsToApiDecimalOrNull(budget.limitAmount),
     archivePromptDismissed: budget.archivePromptDismissed,
+    aiEnabled: isRecipient ? false : budget.aiEnabled,
+    aiDescription: isRecipient ? null : budget.aiDescription,
+    aiPreWindowDays: budget.aiPreWindowDays,
+    aiLastScannedAt: isRecipient ? null : budget.aiLastScannedAt,
     ...serializeLogoFields({ entity: budget }),
     categories,
     lines: (budget.lines || []).map(serializeTrackerLine),

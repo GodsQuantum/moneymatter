@@ -5,6 +5,7 @@ import {
   FINANCIAL_DATA_GUIDE_DESCRIPTION,
   FINANCIAL_DATA_GUIDE_NAME,
 } from './prompts/financial-data-guide';
+import { registerAcceptBudgetSuggestions } from './tools/accept-budget-suggestions';
 import { registerAddTransactionsToBudget } from './tools/add-transactions-to-budget';
 import { registerAddTransactionsToGroup } from './tools/add-transactions-to-group';
 import { registerAdjustAccountBalance } from './tools/adjust-account-balance';
@@ -66,10 +67,12 @@ import { registerLinkRefund } from './tools/link-refund';
 import { registerLinkTransactionToPortfolio } from './tools/link-transaction-to-portfolio';
 import { registerLinkTransactionsToSubscription } from './tools/link-transactions-to-subscription';
 import { registerLinkTransfer } from './tools/link-transfer';
+import { registerListBudgetSuggestions } from './tools/list-budget-suggestions';
 import { registerListPortfolioTransfers } from './tools/list-portfolio-transfers';
 import { registerListSubscriptionCandidates } from './tools/list-subscription-candidates';
 import { registerMergePayees } from './tools/merge-payees';
 import { registerPreviewTransactionAutomation } from './tools/preview-transaction-automation';
+import { registerRejectBudgetSuggestions } from './tools/reject-budget-suggestions';
 import { registerRemoveTagsFromTransaction } from './tools/remove-tags-from-transaction';
 import { registerRemoveTransactionsFromBudget } from './tools/remove-transactions-from-budget';
 import { registerRemoveTransactionsFromGroup } from './tools/remove-transactions-from-group';
@@ -200,6 +203,9 @@ export function createMcpServer(): McpServer {
   registerCreateBudgetLine(server);
   registerUpdateBudgetLine(server);
   registerDeleteBudgetLine(server);
+  registerListBudgetSuggestions(server);
+  registerAcceptBudgetSuggestions(server);
+  registerRejectBudgetSuggestions(server);
 
   // Analytics
   registerGetSpendingByCategories(server);

@@ -13,15 +13,20 @@ import { RadioGroup, RadioGroupItem } from '@/components/lib/ui/radio-group';
 import { useNotificationCenter } from '@/components/notification-center';
 import { trackAnalyticsEvent } from '@/lib/posthog';
 import { cn } from '@/lib/utils';
-import { ROUTES_NAMES } from '@/routes/constants';
 import { useOnboardingStore } from '@/stores/onboarding';
 import { BUDGET_TYPES } from '@bt/shared/types';
 import { useMutation, useQueryClient } from '@tanstack/vue-query';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 
-import { buildBudgetPayload } from './build-budget-payload';
+import {
+  SMART_TRACKING_DEFAULTS,
+  type SmartTrackingValues,
+  buildBudgetPayload,
+  buildSmartTrackingPatch,
+  isSmartTrackingIncomplete,
+} from './build-budget-payload';
+import SmartTrackingFields from './components/smart-tracking-fields.vue';
 import TrackerLogo from './components/tracker-logo.vue';
 import { reportTrackerError } from './components/use-tracker-actions';
 
@@ -54,14 +59,14 @@ const { t } = useI18n();
 const { addSuccessNotification } = useNotificationCenter();
 
 const queryClient = useQueryClient();
-const router = useRouter();
 const form = ref({ ...BUDGET_DEFAULT_VALUES });
-const splitIntoLines = ref(false);
 const categoriesFieldTouched = ref(false);
+const smartTracking = ref<SmartTrackingValues>({ ...SMART_TRACKING_DEFAULTS });
+const showSmartTrackingErrors = ref(false);
 
 const { isPending: isMutating, mutate: createBudgetItem } = useMutation({
   mutationFn: createBudget,
-  onSuccess: (created) => {
+  onSuccess: (_created, payload) => {
     queryClient.invalidateQueries({ queryKey: VUE_QUERY_CACHE_KEYS.budgetsList });
     trackAnalyticsEvent({ event: 'budget_created' });
 
@@ -70,15 +75,7 @@ const { isPending: isMutating, mutate: createBudgetItem } = useMutation({
     onboardingStore.completeTask('create-budget');
 
     emits('create-budget');
-    addSuccessNotification(t('budgets.creation.success'));
-
-    if (splitIntoLines.value) {
-      router.push({
-        name: ROUTES_NAMES.plannedBudgetDetails,
-        params: { id: created.id },
-        query: { tab: 'limits', addLine: '1' },
-      });
-    }
+    addSuccessNotification(payload.aiEnabled ? t('budgets.smartTracking.turnedOn') : t('budgets.creation.success'));
   },
   onError(error) {
     reportTrackerError({ error, fallbackKey: 'budgets.creation.error', context: { source: 'trackerCreate' } });
@@ -99,11 +96,15 @@ const isSubmitDisabled = computed(() => isMutating.value || !form.value.name || 
 const submit = () => {
   const { name, type, categoryIds, startDate, endDate, limitAmount, autoInclude, logo } = form.value;
   if (!name) return;
+  const withSmartTracking = type === BUDGET_TYPES.manual && smartTracking.value.aiEnabled;
+  showSmartTrackingErrors.value = true;
+  if (withSmartTracking && isSmartTrackingIncomplete({ values: smartTracking.value })) return;
   createBudgetItem({
     ...buildBudgetPayload({ name, limitAmount, startDate, endDate, categoryIds }),
     type,
     autoInclude,
     ...toOptionalLogoPayload({ selection: logo }),
+    ...(withSmartTracking ? buildSmartTrackingPatch({ values: smartTracking.value }) : {}),
   });
 };
 
@@ -226,10 +227,12 @@ const onBudgetTypeChange = (type: BUDGET_TYPES) => {
       />
     </div>
 
-    <label class="flex cursor-pointer items-center gap-2">
-      <Checkbox v-model="splitIntoLines" />
-      {{ $t('budgets.creation.splitIntoLines') }}
-    </label>
+    <SmartTrackingFields
+      v-if="!isCategoryBudget"
+      v-model="smartTracking"
+      :has-start-date="!!form.startDate"
+      :show-errors="showSmartTrackingErrors"
+    />
 
     <div class="mt-4">
       <Button :disabled="isSubmitDisabled" type="submit">{{ $t('budgets.creation.submitButton') }}</Button>

@@ -5,11 +5,14 @@ import {
   RESOURCE_TYPES,
   type SharePermission,
   type BudgetSpendingStatsResponse,
+  type TrackerAiPreWindowDays,
   type TrackerLineModel,
   type TrackerLinePayload,
+  type TrackerSuggestionsResponse,
 } from '@bt/shared/types';
 import addTransactionsToBudget from '@controllers/budgets/add-transaction-to-budget';
 import removeTransactionsFromBudget from '@controllers/budgets/remove-transaction-from-budget';
+import type { TransactionApiResponse } from '@root/serializers/transactions.serializer';
 import * as getBudgetService from '@root/services/budget.service';
 import * as createBudgetService from '@root/services/budgets/create-budget';
 import type { getBudgetStats } from '@root/services/budgets/stats';
@@ -29,6 +32,9 @@ interface TestCreateBudgetPayload extends EntityLogoWritePayload {
   endDate?: string | Date | null;
   autoInclude?: boolean;
   limitAmount?: number | null;
+  aiEnabled?: boolean;
+  aiDescription?: string | null;
+  aiPreWindowDays?: TrackerAiPreWindowDays;
 }
 
 interface EditBudgetPayload extends EntityLogoWritePayload {
@@ -39,6 +45,9 @@ interface EditBudgetPayload extends EntityLogoWritePayload {
   limitAmount?: number | null;
   autoInclude?: boolean;
   archivePromptDismissed?: boolean;
+  aiEnabled?: boolean;
+  aiDescription?: string | null;
+  aiPreWindowDays?: TrackerAiPreWindowDays;
 }
 
 interface linkTransactionToBudgetPayload {
@@ -346,4 +355,56 @@ export async function getLogoImage({ id }: { id: string }) {
     contentType: header({ name: 'content-type' }),
     cacheControl: header({ name: 'cache-control' }),
   };
+}
+
+export async function getTrackerSuggestions<R extends boolean | undefined = undefined>({
+  id,
+  raw,
+}: {
+  id: string;
+  raw?: R;
+}) {
+  return makeRequest<TrackerSuggestionsResponse<TransactionApiResponse>, R>({
+    method: 'get',
+    url: `/budgets/${id}/suggestions`,
+    raw,
+  });
+}
+
+export async function resolveTrackerSuggestions<R extends boolean | undefined = undefined>({
+  id,
+  action,
+  suggestionIds,
+  raw,
+}: {
+  id: string;
+  action: 'accept' | 'reject' | 'restore';
+  suggestionIds: string[];
+  raw?: R;
+}) {
+  return makeRequest<{ resolvedCount: number }, R>({
+    method: 'post',
+    url: `/budgets/${id}/suggestions/${action}`,
+    payload: { suggestionIds },
+    raw,
+  });
+}
+
+/** The scan runs on a queue with no HTTP trigger, so tests poll the scan status until it is idle. */
+export async function waitForTrackerScanToSettle({
+  id,
+  timeoutMs = 20000,
+  pollIntervalMs = 200,
+}: {
+  id: string;
+  timeoutMs?: number;
+  pollIntervalMs?: number;
+}): Promise<void> {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeoutMs) {
+    const { scan } = await getTrackerSuggestions({ id, raw: true });
+    if (scan.status === 'idle') return;
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+  }
+  throw new Error(`Tracker scan did not settle within ${timeoutMs}ms`);
 }

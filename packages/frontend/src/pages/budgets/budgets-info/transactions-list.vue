@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { loadCategoryBudgetTransactions, removeTransactionsFromBudget } from '@/api/budgets';
+import { addTransactionsToBudget, loadCategoryBudgetTransactions, removeTransactionsFromBudget } from '@/api/budgets';
 import { VUE_QUERY_CACHE_KEYS } from '@/common/const';
 import { Button } from '@/components/lib/ui/button';
 import { SCROLL_AREA_IDS } from '@/components/lib/ui/scroll-area/types';
-import { useNotificationCenter } from '@/components/notification-center';
+import { NotificationType, useNotificationCenter } from '@/components/notification-center';
 import RecordsFiltersDialog from '@/components/records-filters/filters-dialog.vue';
 import RecordsFilters from '@/components/records-filters/index.vue';
 import { useTransactionsWithFilters } from '@/components/records-filters/transactions-with-filters';
@@ -14,23 +14,26 @@ import ErrorState from '@/components/widgets/components/error-state.vue';
 import { useManageTransactionDialog } from '@/components/transactions-list/use-manage-transaction-dialog';
 import { useFormatCurrency } from '@/composable';
 import { useScrollAreaContainer } from '@/composable/scroll-area-container';
+import { useBudgetAccess } from '@/composable/use-budget-access';
 import { useShiftMultiSelect } from '@/composable/shift-multi-select';
 import { useVirtualizedInfiniteScroll } from '@/composable/virtualized-infinite-scroll';
 import { CUSTOM_BREAKPOINTS, useWindowBreakpoints } from '@/composable/window-breakpoints';
 import { cn } from '@/lib/utils';
 import { ROUTES_NAMES } from '@/routes/constants';
-import { BUDGET_TYPES, type BudgetModel } from '@bt/shared/types';
+import { BUDGET_STATUSES, BUDGET_TYPES, type BudgetModel } from '@bt/shared/types';
 import { LayersIcon, Loader2Icon, PlusIcon, TableIcon, TargetIcon } from '@lucide/vue';
 import { useInfiniteQuery, useMutation } from '@tanstack/vue-query';
-import { useIntersectionObserver } from '@vueuse/core';
+import { useIntersectionObserver, useResizeObserver } from '@vueuse/core';
 import { format, parseISO } from 'date-fns';
-import { computed, defineAsyncComponent, reactive, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, reactive, ref, toRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
 import { reportTrackerError, useInvalidateTracker } from '../components/use-tracker-actions';
 import AddTransactionsDialog from './add-transactions-dialog.vue';
 import SelectionActions from './selection-actions.vue';
+import SmartTrackingStrip from './smart-tracking/smart-tracking-strip.vue';
+import { useTrackerSuggestions } from './smart-tracking/use-tracker-suggestions';
 
 const ManageTransactionDialogContent = defineAsyncComponent(
   () => import('@/components/dialogs/manage-transaction/dialog-content.vue'),
@@ -38,6 +41,8 @@ const ManageTransactionDialogContent = defineAsyncComponent(
 const LoanPaymentDialog = defineAsyncComponent(() => import('@/pages/loans/components/loan-payment-dialog/index.vue'));
 
 const props = defineProps<{ budget: BudgetModel; canWrite: boolean }>();
+const emit = defineEmits<{ openSettings: [] }>();
+const reviewOpen = defineModel<boolean>('reviewOpen', { default: false });
 
 const ROW_HEIGHT_PX = 40;
 const SKELETON_ROWS = 8;
@@ -45,13 +50,20 @@ const CATEGORY_PAGE_SIZE = 50;
 
 const { t } = useI18n();
 const invalidateTracker = useInvalidateTracker();
-const { addSuccessNotification } = useNotificationCenter();
+const { addNotification, addSuccessNotification } = useNotificationCenter();
 const { formatBaseCurrency } = useFormatCurrency();
 const isMobile = useWindowBreakpoints(CUSTOM_BREAKPOINTS.uiMobile);
 
 const budgetId = computed(() => String(props.budget.id));
 const isManual = computed(() => props.budget.type === BUDGET_TYPES.manual);
 const isCategory = computed(() => props.budget.type === BUDGET_TYPES.category);
+const { isOwner } = useBudgetAccess(toRef(() => props.budget));
+const hasSmartTracking = computed(() => isManual.value && isOwner.value);
+
+const { data: suggestions } = useTrackerSuggestions({ budgetId, enabled: hasSmartTracking });
+const aiMatchReasonByTxId = computed(
+  () => new Map((suggestions.value?.aiMatched ?? []).map((match) => [match.transactionId, match.reason])),
+);
 
 const router = useRouter();
 // Category trackers derive their rows from categories and dates, so they have no junction rows to link to.
@@ -114,13 +126,17 @@ watch(appliedFilters, () => {
 const scrollContainer = useScrollAreaContainer(SCROLL_AREA_IDS.dashboard);
 const scrollElement = computed<HTMLElement | null>(() => scrollContainer.value?.viewportElement ?? null);
 const listRef = ref<HTMLElement | null>(null);
+const stripRef = ref<HTMLElement | null>(null);
 const scrollMargin = ref(0);
-watch(listRef, (el) => {
+const measureScrollMargin = () => {
+  const el = listRef.value;
   const scrollEl = scrollElement.value;
   if (el && scrollEl) {
     scrollMargin.value = el.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top + scrollEl.scrollTop;
   }
-});
+};
+watch(listRef, measureScrollMargin);
+useResizeObserver(stripRef, measureScrollMargin);
 
 const { virtualRows, totalSize } = useVirtualizedInfiniteScroll({
   items: flatTransactions,
@@ -145,10 +161,30 @@ const {
   closeLoanDialog,
 } = useManageTransactionDialog();
 
+const relink = useMutation({
+  mutationFn: ({ transactionIds }: { transactionIds: string[] }) =>
+    addTransactionsToBudget(budgetId.value, { transactionIds }),
+  onSuccess: () => invalidateTracker({ budgetId: budgetId.value }),
+  onError: (error) =>
+    reportTrackerError({
+      error,
+      fallbackKey: 'budgets.smartTracking.relinkError',
+      context: { source: 'trackerRelinkTransactions', budgetId: budgetId.value },
+    }),
+});
+
 const { isPending: isUnlinking, mutate: unlinkTransactions } = useMutation({
   mutationFn: removeTransactionsFromBudget,
-  onSuccess: () => {
-    addSuccessNotification(t('budgets.list.unlinkTransactionsSuccess'));
+  onSuccess: (_data, { payload: { transactionIds } }) => {
+    if (hasSmartTracking.value && props.budget.aiEnabled) {
+      addNotification({
+        text: t('budgets.smartTracking.unlinked', { count: transactionIds.length }, transactionIds.length),
+        type: NotificationType.success,
+        action: { label: t('budgets.smartTracking.undo'), onClick: () => relink.mutate({ transactionIds }) },
+      });
+    } else {
+      addSuccessNotification(t('budgets.list.unlinkTransactionsSuccess'));
+    }
     resetSelection();
     return invalidateTracker({ budgetId: budgetId.value });
   },
@@ -257,6 +293,15 @@ const formatTransactionDate = (date: string) => format(parseISO(date), 'MMM d, y
         </template>
       </div>
 
+      <div v-if="hasSmartTracking && budget.status !== BUDGET_STATUSES.archived" ref="stripRef">
+        <SmartTrackingStrip
+          v-model:review-open="reviewOpen"
+          :budget="budget"
+          :suggestions="suggestions"
+          @open-settings="emit('openSettings')"
+        />
+      </div>
+
       <div class="p-2 @md/tracker-tx:p-3">
         <div v-if="isInitialLoading" class="space-y-1">
           <TransactionRecordSkeleton v-for="i in SKELETON_ROWS" :key="i" compact />
@@ -320,6 +365,7 @@ const formatTransactionDate = (date: string) => format(parseISO(date), 'MMM d, y
                 compact
                 hide-refund-marker
                 tags-variant="rails"
+                :ai-match-reason="aiMatchReasonByTxId.get(flatTransactions[virtualRow.index]!.id)"
                 :show-checkbox="canWrite"
                 :is-selected="pickedTransactionsIds.has(flatTransactions[virtualRow.index]!.id)"
                 :index="virtualRow.index"

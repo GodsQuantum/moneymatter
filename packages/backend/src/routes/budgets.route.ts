@@ -11,6 +11,12 @@ import createTrackerLine from '@controllers/budgets/lines/create-line';
 import deleteTrackerLine from '@controllers/budgets/lines/delete-line';
 import updateTrackerLine from '@controllers/budgets/lines/update-line';
 import removeTransactionsFromBudget from '@controllers/budgets/remove-transaction-from-budget';
+import getTrackerSuggestions from '@controllers/budgets/suggestions/get-suggestions';
+import {
+  acceptSuggestions,
+  rejectSuggestions,
+  restoreSuggestions,
+} from '@controllers/budgets/suggestions/resolve-suggestions';
 import toggleArchive from '@controllers/budgets/toggle-archive';
 import { authenticateSession } from '@middlewares/better-auth';
 import { blockDemoUsers } from '@middlewares/block-demo-users';
@@ -27,6 +33,7 @@ router.get('/:id', getBudgetById);
 router.get('/:id/stats', getStats);
 router.get('/:id/spending-stats', getSpendingStats);
 router.get('/:id/category-transactions', getCategoryBudgetTransactions);
+router.get('/:id/suggestions', getTrackerSuggestions);
 router.post('/', blockDemoUsers, checkBaseCurrencyLock, createBudget);
 router.put('/:id', blockDemoUsers, checkBaseCurrencyLock, editBudget);
 router.patch('/:id/archive', blockDemoUsers, checkBaseCurrencyLock, toggleArchive);
@@ -39,5 +46,9 @@ router.delete('/:id/lines/:lineId', blockDemoUsers, checkBaseCurrencyLock, delet
 
 router.post('/:id/transactions', blockDemoUsers, checkBaseCurrencyLock, addTransactionsToBudget);
 router.delete('/:id/transactions', blockDemoUsers, checkBaseCurrencyLock, removeTransactionsFromBudget);
+
+router.post('/:id/suggestions/accept', blockDemoUsers, checkBaseCurrencyLock, acceptSuggestions);
+router.post('/:id/suggestions/reject', blockDemoUsers, checkBaseCurrencyLock, rejectSuggestions);
+router.post('/:id/suggestions/restore', blockDemoUsers, checkBaseCurrencyLock, restoreSuggestions);
 
 export default router;

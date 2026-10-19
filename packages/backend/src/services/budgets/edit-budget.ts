@@ -1,24 +1,33 @@
-import { BUDGET_TYPES, type EntityLogoWritePayload, SHARE_PERMISSIONS } from '@bt/shared/types';
+import {
+  BUDGET_TYPES,
+  type EntityLogoWritePayload,
+  type RecordId,
+  SHARE_PERMISSIONS,
+  type TrackerAiPreWindowDays,
+} from '@bt/shared/types';
 import { Money } from '@common/types/money';
 import { findOrThrowNotFound } from '@common/utils/find-or-throw-not-found';
 import { t } from '@i18n/index';
-import { ValidationError } from '@js/errors';
+import { ConflictError, ForbiddenError, ValidationError } from '@js/errors';
 import { removeUndefinedKeys } from '@js/helpers';
 import BudgetCategories from '@models/budget-categories.model';
 import Budgets from '@models/budget.model';
 import TrackerLineCategories from '@models/tracker-line-categories.model';
 import TrackerLines from '@models/tracker-lines.model';
 import { applyLogoWrite } from '@services/brand-logos';
-import { includeCategories, includeLines } from '@services/budget.service';
+import { getBudgetById } from '@services/budget.service';
+import { runAfterCommit } from '@services/common/run-after-commit';
 import { withTransaction } from '@services/common/with-transaction';
 import { Op } from 'sequelize';
 
 import { authorizeBudgetAccess } from './authorize-budget-access';
+import { assertSmartTrackingConfig } from './smart-tracking/assert-smart-tracking-config';
+import { enqueueTrackerScan, getTrackerScanState } from './smart-tracking/tracker-scan-queue';
 import { assertCategoriesOwnedByUser } from './utils/assert-categories-owned-by-user';
 import { expandCategoryIds } from './utils/expand-category-ids';
 
 interface EditBudgetPayload extends EntityLogoWritePayload {
-  id: string;
+  id: RecordId;
   userId: number;
   name?: string;
   startDate?: string | null;
@@ -27,7 +36,14 @@ interface EditBudgetPayload extends EntityLogoWritePayload {
   autoInclude?: boolean;
   archivePromptDismissed?: boolean;
   categoryIds?: string[];
+  aiEnabled?: boolean;
+  aiDescription?: string | null;
+  aiPreWindowDays?: TrackerAiPreWindowDays;
 }
+
+// Forms resend the same days normalised to start/end of day; only a day change moves the scan window.
+const toUtcDay = ({ date }: { date: Date | string | null }) =>
+  date ? new Date(date).toISOString().slice(0, 10) : null;
 
 const dropLineCategoriesOutsideTracker = async ({
   budgetId,
@@ -62,11 +78,16 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
   // owner / manage-only per PRD reduced-write-scope decision. `write` recipients can
   // attach their own transactions but not mutate the budget definition itself, which
   // avoids "my partner renamed my budget" / "categories list moved under me" surprises.
-  const { ownerUserId } = await authorizeBudgetAccess({
+  const { ownerUserId, isOwner } = await authorizeBudgetAccess({
     userId,
     budgetId: id,
     requiredPermission: SHARE_PERMISSIONS.manage,
   });
+
+  const aiFieldsSent = [params.aiEnabled, params.aiDescription, params.aiPreWindowDays].some((v) => v !== undefined);
+  if (aiFieldsSent && !isOwner) {
+    throw new ForbiddenError({ message: t({ key: 'budgets.smartTracking.ownerOnly' }) });
+  }
 
   const budget = await findOrThrowNotFound({
     query: Budgets.findOne({ where: { id, userId: ownerUserId } }),
@@ -77,6 +98,25 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
   const endDate = params.endDate === undefined ? budget.endDate : params.endDate;
   if (startDate && endDate && new Date(startDate).getTime() > new Date(endDate).getTime()) {
     throw new ValidationError({ message: t({ key: 'budgets.startDateAfterEndDate' }) });
+  }
+
+  const aiEnabled = params.aiEnabled ?? budget.aiEnabled;
+  const aiDescription = params.aiDescription === undefined ? budget.aiDescription : params.aiDescription;
+  const aiPreWindowDays = params.aiPreWindowDays ?? budget.aiPreWindowDays;
+  assertSmartTrackingConfig({ type: budget.type, aiEnabled, aiDescription, startDate });
+
+  const aiChanged =
+    aiEnabled !== budget.aiEnabled ||
+    aiDescription !== budget.aiDescription ||
+    aiPreWindowDays !== budget.aiPreWindowDays;
+  const rangeChanged =
+    toUtcDay({ date: startDate }) !== toUtcDay({ date: budget.startDate }) ||
+    toUtcDay({ date: endDate }) !== toUtcDay({ date: budget.endDate });
+  const rescan = aiEnabled && (aiChanged || rangeChanged);
+
+  // A running scan writes its cursor at the end and would overwrite the reset below.
+  if ((aiChanged || rescan) && (await getTrackerScanState({ budgetId: id })).status !== 'idle') {
+    throw new ConflictError({ message: t({ key: 'budgets.smartTracking.scanRunning' }) });
   }
 
   const replaceCategories = categoryIds !== undefined && budget.type === BUDGET_TYPES.category;
@@ -94,7 +134,8 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
     stored: budget,
   });
 
-  await budget.update({ ...removeUndefinedKeys(fields), ...logoPatch });
+  await budget.update({ ...removeUndefinedKeys(fields), ...logoPatch, ...(rescan && { aiScannedUntil: null }) });
+  if (rescan) await runAfterCommit({ fn: () => enqueueTrackerScan({ budgetId: id }) });
 
   if (replaceCategories) {
     await BudgetCategories.destroy({ where: { budgetId: id } });
@@ -103,11 +144,5 @@ export const editBudget = withTransaction(async ({ id, userId, categoryIds, ...p
     await dropLineCategoriesOutsideTracker({ budgetId: id, trackerCategoryIds: expandedCategoryIds });
   }
 
-  const updatedBudget = await Budgets.findOne({
-    where: { id, userId: ownerUserId },
-    attributes: { exclude: ['userId'] },
-    include: budget.type === BUDGET_TYPES.category ? [includeCategories, includeLines] : [includeLines],
-  });
-
-  return updatedBudget;
+  return getBudgetById({ userId, id });
 });

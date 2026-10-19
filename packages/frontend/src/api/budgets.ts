@@ -5,11 +5,21 @@ import {
   type BudgetSpendingStatsResponse,
   type BudgetStatsResponse,
   type EntityLogoWritePayload,
+  type ResolveTrackerSuggestionsBody,
+  type ResolveTrackerSuggestionsResponse,
+  type TrackerAiPreWindowDays,
   type TrackerLineModel,
   type TrackerLinePayload,
+  type TrackerSuggestionsResponse,
 } from '@bt/shared/types';
 
-interface EditBudgetPayload extends EntityLogoWritePayload {
+interface SmartTrackingPayload {
+  aiEnabled?: boolean;
+  aiDescription?: string | null;
+  aiPreWindowDays?: TrackerAiPreWindowDays;
+}
+
+interface EditBudgetPayload extends EntityLogoWritePayload, SmartTrackingPayload {
   name?: string;
   limitAmount?: number | null;
   categoryIds?: string[];
@@ -26,7 +36,7 @@ export const loadBudgetById = async (id: string): Promise<BudgetModel> => {
   return api.get(`/budgets/${id}`);
 };
 
-interface CreateBudgetPayload extends EntityLogoWritePayload {
+interface CreateBudgetPayload extends EntityLogoWritePayload, SmartTrackingPayload {
   name: string;
   type?: BUDGET_TYPES;
   categoryIds?: string[];
@@ -127,3 +137,24 @@ export const loadBudgetSpendingStats = async ({
 }): Promise<BudgetSpendingStatsResponse> => {
   return api.get(`/budgets/${budgetId}/spending-stats`);
 };
+
+export const loadTrackerSuggestions = async ({ budgetId }: { budgetId: string }): Promise<TrackerSuggestionsResponse> =>
+  api.get(`/budgets/${budgetId}/suggestions`);
+
+export const acceptTrackerSuggestions = async ({
+  budgetId,
+  suggestionIds,
+}: ResolveTrackerSuggestionsBody & { budgetId: string }): Promise<ResolveTrackerSuggestionsResponse> =>
+  api.post(`/budgets/${budgetId}/suggestions/accept`, { suggestionIds });
+
+export const rejectTrackerSuggestions = async ({
+  budgetId,
+  suggestionIds,
+}: ResolveTrackerSuggestionsBody & { budgetId: string }): Promise<ResolveTrackerSuggestionsResponse> =>
+  api.post(`/budgets/${budgetId}/suggestions/reject`, { suggestionIds });
+
+export const restoreTrackerSuggestions = async ({
+  budgetId,
+  suggestionIds,
+}: ResolveTrackerSuggestionsBody & { budgetId: string }): Promise<ResolveTrackerSuggestionsResponse> =>
+  api.post(`/budgets/${budgetId}/suggestions/restore`, { suggestionIds });

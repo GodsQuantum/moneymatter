@@ -12,7 +12,7 @@ import { useFormatCurrency } from '@/composable/formatters';
 import { cn } from '@/lib/utils';
 import { BUDGET_TYPES, type BudgetModel, type BudgetStatsResponse, type TrackerLineModel } from '@bt/shared/types';
 import { LayersIcon, MoreHorizontalIcon, PencilIcon, PlusIcon, Trash2Icon } from '@lucide/vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import CategoryChips from '../../components/category-chips.vue';
 import UtilizationBar from '../../components/utilization-bar.vue';
@@ -29,7 +29,6 @@ const props = defineProps<{
   stats: BudgetStatsResponse | undefined;
   statsPending?: boolean;
   canManage: boolean;
-  autoOpenAddLine?: boolean;
 }>();
 
 const { formatBaseCurrency } = useFormatCurrency();
@@ -48,10 +47,6 @@ const openDialog = ({ line }: { line?: TrackerLineModel } = {}) => {
   dialogLine.value = line;
   isDialogOpen.value = true;
 };
-
-onMounted(() => {
-  if (props.autoOpenAddLine && props.canManage) openDialog();
-});
 
 const lineToDelete = ref<TrackerLineModel | null>(null);
 const isDeleteOpen = ref(false);

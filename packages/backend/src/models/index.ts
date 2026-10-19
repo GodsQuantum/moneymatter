@@ -58,6 +58,7 @@ import TagRemindersModel from './tag-reminders.model';
 import TagsModel from './tags.model';
 import TrackerLineCategoriesModel from './tracker-line-categories.model';
 import TrackerLinesModel from './tracker-lines.model';
+import TrackerSuggestionsModel from './tracker-suggestions.model';
 import TransactionAttachmentsModel from './transaction-attachments.model';
 import TransactionAutomationsModel from './transaction-automations.model';
 import TransactionGroupItemsModel from './transaction-group-items.model';
@@ -120,6 +121,7 @@ const models = [
   BudgetCategoriesModel,
   BudgetTransactionsModel,
   TrackerLinesModel,
+  TrackerSuggestionsModel,
   TrackerLineCategoriesModel,
   TagsModel,
   TagRemindersModel,

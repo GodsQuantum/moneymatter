@@ -1,7 +1,10 @@
+import { TRACKER_AI_DESCRIPTION_MAX_LENGTH, TRACKER_AI_PRE_WINDOW_DAYS } from '@bt/shared/types';
 import { recordId } from '@common/lib/zod/custom-types';
 import { Money } from '@common/types/money';
+import { smartTrackingFieldsShape } from '@controllers/budgets/smart-tracking-fields.schema';
 import { trackMcpToolUsed } from '@js/utils/posthog';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { serializeBudget } from '@root/serializers/budgets.serializer';
 import { editBudget } from '@services/budgets/edit-budget';
 import { z } from 'zod';
 
@@ -25,6 +28,15 @@ const inputSchema = {
     .array(recordId())
     .optional()
     .describe('Replace the linked category IDs (only applies to category-type trackers)'),
+  aiEnabled: smartTrackingFieldsShape.aiEnabled.describe(
+    'Turn smart tracking on or off. Owner only; manual trackers only; enabling needs a description and a start date (already saved or passed here)',
+  ),
+  aiDescription: smartTrackingFieldsShape.aiDescription.describe(
+    `Plain-language description of what belongs in the tracker (max ${TRACKER_AI_DESCRIPTION_MAX_LENGTH} chars). Owner only; null clears it`,
+  ),
+  aiPreWindowDays: smartTrackingFieldsShape.aiPreWindowDays.describe(
+    `Days before startDate the AI also scans. One of ${TRACKER_AI_PRE_WINDOW_DAYS.join(', ')}. Owner only`,
+  ),
 };
 
 export function registerUpdateBudget(server: McpServer) {
@@ -32,7 +44,7 @@ export function registerUpdateBudget(server: McpServer) {
     'update_budget',
     {
       description:
-        'Update the name, date range, spending limit, or linked categories of an existing tracker (a "budget" in tool and field names). Only passed fields change; limitAmount null removes the limit. Lines are managed with create_budget_line, update_budget_line and delete_budget_line. Returns the updated tracker record.',
+        'Update the name, date range, spending limit, or linked categories of an existing tracker (a "budget" in tool and field names). Only passed fields change; limitAmount null removes the limit. Lines are managed with create_budget_line, update_budget_line and delete_budget_line. Changing smart-tracking fields or dates rescans the tracker and fails while a scan is already queued or running. Returns the updated tracker record.',
       inputSchema,
     },
     async (args, extra) => {
@@ -49,9 +61,12 @@ export function registerUpdateBudget(server: McpServer) {
         limitAmount: args.limitAmount == null ? args.limitAmount : Money.fromDecimal(args.limitAmount),
         autoInclude: args.autoInclude,
         categoryIds: args.categoryIds,
+        aiEnabled: args.aiEnabled,
+        aiDescription: args.aiDescription,
+        aiPreWindowDays: args.aiPreWindowDays,
       });
 
-      return jsonContent({ data: budget });
+      return jsonContent({ data: budget && serializeBudget(budget) });
     },
   );
 }

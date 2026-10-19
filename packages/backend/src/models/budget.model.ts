@@ -1,4 +1,10 @@
-import { BUDGET_STATUSES, BUDGET_TYPES, RecordId } from '@bt/shared/types';
+import {
+  BUDGET_STATUSES,
+  BUDGET_TYPES,
+  RecordId,
+  TRACKER_AI_DEFAULT_PRE_WINDOW_DAYS,
+  type TrackerAiPreWindowDays,
+} from '@bt/shared/types';
 import { IdColumn } from '@common/types/id-column';
 import { Money } from '@common/types/money';
 import { MoneyField } from '@common/types/money-column';
@@ -64,6 +70,22 @@ export default class Budgets extends Model {
 
   @MoneyField({ storage: 'cents', allowNull: true })
   declare limitAmount: Money | null;
+
+  @Column({ allowNull: false, defaultValue: false, type: DataType.BOOLEAN })
+  aiEnabled!: boolean;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  aiDescription!: string | null;
+
+  @Column({ allowNull: false, defaultValue: TRACKER_AI_DEFAULT_PRE_WINDOW_DAYS, type: DataType.INTEGER })
+  aiPreWindowDays!: TrackerAiPreWindowDays;
+
+  /** Transactions updated after this were not seen by the last smart tracking scan; null rescans everything. */
+  @Column({ type: DataType.DATE, allowNull: true })
+  aiScannedUntil!: Date | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  aiLastScannedAt!: Date | null;
 
   @ForeignKey(() => Users)
   @Column({ allowNull: false, type: DataType.INTEGER })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildBudgetPayload } from './build-budget-payload';
+import { SMART_TRACKING_DEFAULTS, buildBudgetPayload, buildSmartTrackingPatch } from './build-budget-payload';
 
 describe('buildBudgetPayload', () => {
   const baseValues = { name: 'Groceries', startDate: null, endDate: null };
@@ -44,5 +44,33 @@ describe('buildBudgetPayload', () => {
     expect(
       buildBudgetPayload({ name: 'Trip', limitAmount: 500, startDate: undefined, endDate: undefined, categoryIds: [] }),
     ).toEqual({ name: 'Trip', limitAmount: 500, startDate: null, endDate: null, categoryIds: [] });
+  });
+});
+
+describe('buildSmartTrackingPatch', () => {
+  const stored = { aiEnabled: true, aiDescription: 'Greece trip', aiPreWindowDays: 60 as const };
+
+  it('returns nothing when the values match what is stored', () => {
+    expect(buildSmartTrackingPatch({ values: { ...stored, aiDescription: '  Greece trip ' }, stored })).toEqual({});
+  });
+
+  it('returns only the changed fields, with a trimmed description', () => {
+    expect(
+      buildSmartTrackingPatch({ values: { ...stored, aiDescription: ' Flights ', aiPreWindowDays: 90 }, stored }),
+    ).toEqual({ aiDescription: 'Flights', aiPreWindowDays: 90 });
+  });
+
+  it('sends a blank description as null', () => {
+    expect(buildSmartTrackingPatch({ values: { ...stored, aiEnabled: false, aiDescription: '  ' }, stored })).toEqual({
+      aiEnabled: false,
+      aiDescription: null,
+    });
+  });
+
+  it('diffs against the defaults when nothing is stored', () => {
+    expect(buildSmartTrackingPatch({ values: SMART_TRACKING_DEFAULTS })).toEqual({});
+    expect(
+      buildSmartTrackingPatch({ values: { ...SMART_TRACKING_DEFAULTS, aiEnabled: true, aiDescription: 'Trip' } }),
+    ).toEqual({ aiEnabled: true, aiDescription: 'Trip' });
   });
 });

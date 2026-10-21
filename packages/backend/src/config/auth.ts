@@ -4,6 +4,7 @@ import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@bt/shared/const/auth'
 import { OAUTH_PROVIDERS_LIST } from '@bt/shared/types';
 import { EnvVar, isEnvConfigured } from '@common/utils/env';
 import { createSessionHooks } from '@config/auth-hooks/session-hooks';
+import { standardOAuthTokenResponse } from '@config/oauth-token-interop';
 import { shouldUseSecureCookies } from '@config/should-use-secure-cookies';
 import { isAuthApiError } from '@controllers/helpers/error-handler';
 import { t } from '@i18n/index';
@@ -19,6 +20,7 @@ import { sendPasswordResetEmail } from '@services/user/send-password-reset-email
 import { areSignupsOpen } from '@services/user/signups-open.service';
 import bcrypt from 'bcryptjs';
 import { APIError, betterAuth } from 'better-auth';
+import { createAuthMiddleware } from 'better-auth/api';
 import { jwt } from 'better-auth/plugins';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
@@ -238,6 +240,13 @@ export const auth = betterAuth({
         isEnvConfigured(EnvVar.GITHUB_CLIENT_ID, process.env.GITHUB_CLIENT_ID) &&
         isEnvConfigured(EnvVar.GITHUB_CLIENT_SECRET, process.env.GITHUB_CLIENT_SECRET),
     },
+  },
+
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      const response = standardOAuthTokenResponse(ctx.path, ctx.context.returned);
+      if (response) return ctx.json(response);
+    }),
   },
 
   // Plugins
